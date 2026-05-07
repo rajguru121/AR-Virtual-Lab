@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VirtuLab – XNOR Gate Simulation: Interactive truth table and 3D visualization">
+    <title>VirtuLab – XNOR Gate</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0e1a;
+            --surface: #131729;
+            --border: #1e2540;
+            --accent: #7c3aed;
+            --accent-glow: rgba(124, 58, 237, 0.35);
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --on: #10b981;
+            --off: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── Header ─────────────────────────────── */
+        .header {
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .header a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        .header a:hover { text-decoration: underline; }
+        .header h1 { font-size: 1.3rem; font-weight: 600; }
+
+        /* ── Main Layout ────────────────────────── */
+        .main {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1100px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ── Gate Visual ────────────────────────── */
+        .gate-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            min-width: 320px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .gate-svg-container {
+            width: 280px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gate-svg-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .input-controls {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .toggle-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .toggle-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            border: 2px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-btn.on {
+            background: var(--on);
+            border-color: var(--on);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .toggle-btn.off {
+            background: var(--off);
+            border-color: var(--off);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .output-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .output-value {
+            font-size: 3rem;
+            font-weight: 800;
+            transition: color 0.2s ease;
+        }
+
+        .output-value.high { color: var(--on); text-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+        .output-value.low  { color: var(--off); text-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+
+        .output-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Truth Table ────────────────────────── */
+        .truth-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            min-width: 280px;
+            flex: 0.7;
+        }
+
+        .truth-panel h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        th {
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr.active-row {
+            background: var(--accent-glow);
+            border-radius: 8px;
+        }
+
+        .info-text {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(124, 58, 237, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        .info-text strong { color: var(--text); }
+
+        /* ── Responsive ─────────────────────────── */
+        @media (max-width: 700px) {
+            .main { flex-direction: column; padding: 1rem; }
+            .gate-panel, .truth-panel { min-width: auto; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="/">← Back to Lab</a>
+    <h1>⚡ XNOR Gate</h1>
+</div>
+
+<div class="main">
+    <!-- Gate Visualization -->
+    <div class="gate-panel">
+        <div class="gate-svg-container">
+            <svg viewBox="0 0 280 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- Input wires -->
+                <line x1="20" y1="70" x2="75" y2="70" stroke="#64748b" stroke-width="3"/>
+                <line x1="20" y1="130" x2="75" y2="130" stroke="#64748b" stroke-width="3"/>
+                <!-- XNOR gate body (curved) -->
+                <path d="M80,45 Q120,45 150,100 Q120,155 80,155 Q100,100 80,45 Z" fill="none" stroke="#7c3aed" stroke-width="3"/>
+                <!-- Extra input curve -->
+                <path d="M70,45 Q90,100 70,155" fill="none" stroke="#7c3aed" stroke-width="3"/>
+                <!-- Inversion bubble -->
+                <circle cx="158" cy="100" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/>
+                <!-- Output wire -->
+                <line x1="166" y1="100" x2="260" y2="100" stroke="#64748b" stroke-width="3"/>
+                <!-- Labels -->
+                <text x="10" y="74" fill="#94a3b8" font-size="14" font-weight="600" id="svgA">A: 0</text>
+                <text x="10" y="134" fill="#94a3b8" font-size="14" font-weight="600" id="svgB">B: 0</text>
+                <text x="210" y="96" fill="#94a3b8" font-size="14" font-weight="600" id="svgOut">Out: 1</text>
+                <!-- Output dot -->
+                <circle cx="260" cy="100" r="5" id="outputDot" fill="#10b981"/>
+            </svg>
+        </div>
+
+        <div class="input-controls">
+            <div class="toggle-group">
+                <span class="toggle-label">Input A</span>
+                <button class="toggle-btn off" id="btnA" onclick="toggleInput('A')">0</button>
+            </div>
+            <div class="toggle-group">
+                <span class="toggle-label">Input B</span>
+                <button class="toggle-btn off" id="btnB" onclick="toggleInput('B')">0</button>
+            </div>
+        </div>
+
+        <div class="output-display">
+            <div class="output-value high" id="outputVal">1</div>
+            <div class="output-label">Output</div>
+        </div>
+    </div>
+
+    <!-- Truth Table -->
+    <div class="truth-panel">
+        <h2>Truth Table</h2>
+        <table>
+            <thead>
+                <tr><th>A</th><th>B</th><th>Output (A ⊙ B)</th></tr>
+            </thead>
+            <tbody id="truthBody">
+                <tr id="row-0-0" class="active-row"><td>0</td><td>0</td><td>1</td></tr>
+                <tr id="row-0-1"><td>0</td><td>1</td><td>0</td></tr>
+                <tr id="row-1-0"><td>1</td><td>0</td><td>0</td></tr>
+                <tr id="row-1-1"><td>1</td><td>1</td><td>1</td></tr>
+            </tbody>
+        </table>
+
+        <div class="info-text">
+            <strong>XNOR Gate</strong> (Exclusive NOR) outputs <strong>HIGH (1)</strong> when
+            both inputs are the <strong>same</strong> — both 0 or both 1. It is the complement
+            of the XOR gate and is also called an <strong>equivalence gate</strong>.
+            <br><br>
+            <strong>Boolean Expression:</strong> Y = A ⊙ B = (A · B) + (A̅ · B̅)
+        </div>
+    </div>
+</div>
+
+<script>
+    let inputA = 0, inputB = 0;
+
+    function xnor(a, b) { return (a === b) ? 1 : 0; }
+
+    function toggleInput(which) {
+        if (which === 'A') inputA = inputA ? 0 : 1;
+        else inputB = inputB ? 0 : 1;
+        update();
+    }
+
+    function update() {
+        const out = xnor(inputA, inputB);
+
+        // Buttons
+        const btnA = document.getElementById('btnA');
+        const btnB = document.getElementById('btnB');
+        btnA.textContent = inputA;
+        btnB.textContent = inputB;
+        btnA.className = 'toggle-btn ' + (inputA ? 'on' : 'off');
+        btnB.className = 'toggle-btn ' + (inputB ? 'on' : 'off');
+
+        // Output
+        const outEl = document.getElementById('outputVal');
+        outEl.textContent = out;
+        outEl.className = 'output-value ' + (out ? 'high' : 'low');
+
+        // SVG labels
+        document.getElementById('svgA').textContent = 'A: ' + inputA;
+        document.getElementById('svgB').textContent = 'B: ' + inputB;
+        document.getElementById('svgOut').textContent = 'Out: ' + out;
+        document.getElementById('outputDot').setAttribute('fill', out ? '#10b981' : '#ef4444');
+
+        // Truth table highlight
+        document.querySelectorAll('#truthBody tr').forEach(r => r.classList.remove('active-row'));
+        const activeRow = document.getElementById('row-' + inputA + '-' + inputB);
+        if (activeRow) activeRow.classList.add('active-row');
+    }
+</script>
+
+</body>
+</html>

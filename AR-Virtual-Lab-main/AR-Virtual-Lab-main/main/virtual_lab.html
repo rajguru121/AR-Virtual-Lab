@@ -1,0 +1,3667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VirtuLab – Digital Electronics & Computer Graphics Laboratory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --surface2: #f3f4f6;
+    --border: #d1d5db;
+    --accent: #0066cc;
+    --accent2: #7c3aed;
+    --accent3: #059669;
+    --text: #1a202c;
+    --muted: #6b7280;
+    --danger: #dc2626;
+    --warn: #d97706;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BG ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,102,204,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,102,204,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; }
+
+  /* ── AUTH ── */
+  .auth-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .auth-logo {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.1em;
+  }
+
+  .auth-title {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .auth-sub {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+  }
+
+  .form-group { margin-bottom: 1.1rem; }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--mono);
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #0066cc;
+    color: #ffffff;
+    width: 100%;
+    justify-content: center;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #0052a3; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: #0066cc;
+    border: 1px solid #0066cc;
+  }
+  .btn-ghost:hover { background: rgba(0,102,204,0.08); }
+
+  .btn-sm {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+
+  .auth-switch {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .auth-switch span {
+    color: #0066cc;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* ── APP SHELL ── */
+  .app-shell {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 1rem;
+    color: #0066cc;
+    letter-spacing: 0.08em;
+  }
+
+  .sidebar-logo span {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-section {
+    padding: 1rem 0.75rem 0.5rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-family: var(--mono);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.25rem;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 0 0.5rem 0.1rem;
+    font-size: 0.875rem;
+    color: var(--muted);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: rgba(0,102,204,0.08);
+    color: #0066cc;
+    border-color: rgba(0,102,204,0.15);
+  }
+
+  .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem;
+    border-radius: 8px;
+    background: var(--surface2);
+  }
+
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0066cc, #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.85rem; color: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-roll { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); }
+
+  /* ── MAIN ── */
+  .main-content {
+    margin-left: 260px;
+    flex: 1;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .page-sub { color: var(--muted); font-size: 0.875rem; }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-family: var(--mono);
+  }
+
+  .breadcrumb .active { color: #0066cc; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-title {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-val {
+    font-size: 2.2rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .stat-label { font-size: 0.8rem; color: var(--muted); }
+
+  .stat-accent { color: var(--accent); }
+  .stat-purple { color: var(--accent2); }
+  .stat-green { color: var(--accent3); }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+
+  /* ── MODULE CARDS ── */
+  .module-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .module-card:hover {
+    border-color: #0066cc;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,102,204,0.08);
+  }
+
+  .module-card .mod-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .module-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .module-card p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    border: 1px solid;
+    margin-right: 0.3rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .tag-cyan { color: #0066cc; border-color: rgba(0,102,204,0.3); background: rgba(0,102,204,0.08); }
+  .tag-purple { color: #7c3aed; border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.08); }
+  .tag-green { color: #059669; border-color: rgba(5,150,105,0.3); background: rgba(5,150,105,0.08); }
+  .tag-warn { color: #d97706; border-color: rgba(217,119,6,0.3); background: rgba(217,119,6,0.08); }
+
+  /* ── TOPIC LIST ── */
+  .topic-list { list-style: none; }
+
+  .topic-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    margin-bottom: 0.3rem;
+  }
+
+  .topic-item:hover {
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .topic-item.done {
+    opacity: 0.65;
+  }
+
+  .topic-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .check-circle {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .check-circle.done {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+  }
+
+  /* ── SIMULATOR ── */
+  .sim-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .sim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .sim-title { font-family: var(--mono); font-size: 0.85rem; color: #0066cc; }
+
+  .sim-body { padding: 1.5rem; }
+
+  /* ── TRUTH TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 0.6rem 1rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  td {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+
+  .val-1 { color: #059669; font-weight: 700; }
+  .val-0 { color: var(--muted); }
+
+  /* ── GATE SVG ── */
+  .gate-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .gate-svg-wrap {
+    text-align: center;
+  }
+
+  .gate-svg-wrap svg {
+    filter: drop-shadow(0 0 8px rgba(0,102,204,0.2));
+  }
+
+  .gate-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+
+  /* ── INPUT TOGGLES ── */
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .toggle-btn {
+    width: 50px; height: 50px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    color: #1a202c;
+    font-family: var(--mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn.on {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(5,150,105,0.3);
+  }
+
+  .output-led {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    color: #1a202c;
+    transition: all 0.3s;
+  }
+
+  .output-led.on {
+    background: #0066cc;
+    border-color: #0066cc;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(0,102,204,0.4);
+  }
+
+  /* ── CANVAS AREA ── */
+  canvas {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fafbfc;
+    cursor: crosshair;
+  }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: #f3f4f6;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    position: relative;
+    color: #1a202c;
+  }
+
+  .code-block .comment { color: #6b7280; }
+  .code-block .keyword { color: #7c3aed; }
+  .code-block .type { color: #0066cc; }
+  .code-block .string { color: #059669; }
+  .code-block .num { color: #d97706; }
+
+  .copy-btn {
+    position: absolute;
+    top: 0.75rem; right: 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: #0066cc; }
+
+  /* ── CG CANVAS CONTROLS ── */
+  .cg-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+
+  .ctrl-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .ctrl-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  input[type="range"] {
+    width: 80px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    accent-color: #0066cc;
+  }
+
+  input[type="color"] {
+    width: 32px; height: 28px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+  }
+
+  /* ── BADGE ── */
+  .badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+
+  .badge-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .badge-card.earned {
+    border-color: rgba(0,102,204,0.3);
+    background: rgba(0,102,204,0.05);
+  }
+
+  .badge-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .badge-name { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .badge-desc { font-size: 0.65rem; color: var(--muted); }
+  .badge-locked { filter: grayscale(1); opacity: 0.4; }
+
+  /* ── CHART ── */
+  .chart-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    height: 120px;
+    padding: 0.5rem 0;
+  }
+
+  .bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+  }
+
+  .bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.5s ease;
+    min-height: 4px;
+  }
+
+  .bar-lbl {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-align: center;
+  }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .alert-info { background: rgba(0,102,204,0.08); border: 1px solid rgba(0,102,204,0.2); color: #0066cc; }
+  .alert-success { background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.2); color: #059669; }
+  .alert-warn { background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.2); color: #d97706; }
+
+  /* ── FLIP FLOP ── */
+  .ff-table { max-width: 400px; }
+
+  /* ── TAB ── */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    border-radius: 0;
+    margin-bottom: -1px;
+    font-family: var(--mono);
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: #0066cc; border-bottom-color: #0066cc; }
+
+  /* ── SEPARATOR ── */
+  .sep { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* ── HIDDEN ── */
+  .hidden { display: none !important; }
+
+  .row { display: flex; gap: 1.5rem; }
+  .col { flex: 1; }
+
+  /* ── CHIP ── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+  }
+
+  .chip-cyan { background: rgba(0,102,204,0.1); color: #0066cc; }
+  .chip-red { background: rgba(220,38,38,0.1); color: #dc2626; }
+
+  /* ── SCROLL ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── TRANSITIONS ── */
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { width: 220px; }
+    .main-content { margin-left: 220px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .module-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .sidebar { transform: translateX(-100%); }
+    .main-content { margin-left: 0; padding: 1rem; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  select option { background: var(--surface2); }
+
+  .tooltip {
+    position: relative;
+  }
+  .tooltip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 99;
+  }
+  .tooltip:hover::after { opacity: 1; }
+
+  .waveform {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 40px;
+    padding: 4px 0;
+  }
+  .wave-seg {
+    flex: 1;
+    border-radius: 2px;
+    transition: height 0.1s;
+  }
+
+  .signal-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+
+  .signal-name { width: 60px; color: var(--muted); }
+
+  .signal-wave {
+    flex: 1;
+    height: 30px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--surface2);
+    display: flex;
+  }
+
+  .sw-high { background: #0066cc; }
+  .sw-low { background: #e5e7eb; }
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="authPage" class="page">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">◈ VIRTULAB</div>
+      <div class="auth-title" id="authTitle">Welcome Back</div>
+      <div class="auth-sub" id="authSub">Sign in to your laboratory account</div>
+
+      <!-- LOGIN FORM -->
+      <div id="loginForm">
+        <div class="form-group">
+          <label>Email / Roll Number</label>
+          <input type="text" id="loginId" placeholder="student@college.edu or CS2024001" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="••••••••" />
+        </div>
+        <div style="text-align:right; margin-bottom:1.2rem;">
+          <span style="font-size:0.8rem; color:var(--accent); cursor:pointer;" onclick="showForgot()">Forgot password?</span>
+        </div>
+        <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+        <div id="loginError" style="color:var(--danger);font-size:0.8rem;text-align:center;margin-top:0.75rem;"></div>
+        <div class="auth-switch">New here? <span onclick="showSignup()">Create an account</span></div>
+        <div class="auth-switch" style="margin-top:0.5rem;"><span onclick="adminLogin()">Admin Login ›</span></div>
+      </div>
+
+      <!-- SIGNUP FORM -->
+      <div id="signupForm" class="hidden">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="regName" placeholder="Rahul Sharma" />
+          </div>
+          <div class="form-group">
+            <label>Roll Number</label>
+            <input type="text" id="regRoll" placeholder="CS2024001" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="rahul@college.edu" />
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Department</label>
+            <select id="regDept">
+              <option>Computer Science</option>
+              <option>Information Technology</option>
+              <option>Electronics</option>
+              <option>Electrical</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Year</label>
+            <select id="regYear">
+              <option>1st Year</option>
+              <option>2nd Year</option>
+              <option>3rd Year</option>
+              <option>4th Year</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPass" placeholder="min 8 chars" />
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="regPass2" placeholder="repeat" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="doSignup()">Create Account →</button>
+        <div id="signupMsg" style="font-size:0.8rem;text-align:center;margin-top:0.75rem;"></div>
+        <div class="auth-switch">Already registered? <span onclick="showLogin()">Sign in</span></div>
+      </div>
+
+      <!-- FORGOT -->
+      <div id="forgotForm" class="hidden">
+        <div class="form-group">
+          <label>Registered Email</label>
+          <input type="email" placeholder="rahul@college.edu" />
+        </div>
+        <button class="btn btn-primary" onclick="alert('Reset link sent (demo).')">Send Reset Link</button>
+        <div class="auth-switch"><span onclick="showLogin()">← Back to login</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="appPage" class="page hidden">
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">◈ VIRTULAB <span>Virtual Engineering Lab</span></div>
+
+      <div class="sidebar-section">Navigation</div>
+      <div class="nav-item active" onclick="showSection('dashboard', this)">
+        <span class="nav-icon">⊞</span> Dashboard
+      </div>
+
+      <div class="sidebar-section">DELD Module</div>
+      <div class="nav-item" onclick="showSection('gates', this)">
+        <span class="nav-icon">⊕</span> Logic Gates
+      </div>
+      <div class="nav-item" onclick="showSection('combinational', this)">
+        <span class="nav-icon">⊗</span> Combinational
+      </div>
+      <div class="nav-item" onclick="showSection('sequential', this)">
+        <span class="nav-icon">↺</span> Sequential
+      </div>
+      <div class="nav-item" onclick="showSection('truthtable', this)">
+        <span class="nav-icon">⊞</span> Truth Tables
+      </div>
+      <div class="nav-item" onclick="showSection('circuit', this)">
+        <span class="nav-icon">⚡</span> Circuit Builder
+      </div>
+
+      <div class="sidebar-section">CG Module</div>
+      <div class="nav-item" onclick="showSection('drawing', this)">
+        <span class="nav-icon">∕</span> Line & Shapes
+      </div>
+      <div class="nav-item" onclick="showSection('transform2d', this)">
+        <span class="nav-icon">⇄</span> 2D Transforms
+      </div>
+      <div class="nav-item" onclick="showSection('transform3d', this)">
+        <span class="nav-icon">◈</span> 3D Transforms
+      </div>
+      <div class="nav-item" onclick="showSection('clipping', this)">
+        <span class="nav-icon">✂</span> Clipping
+      </div>
+      <div class="nav-item" onclick="showSection('curves', this)">
+        <span class="nav-icon">⌒</span> Curves
+      </div>
+
+      <div class="sidebar-section">Student</div>
+      <div class="nav-item" onclick="showSection('progress', this)">
+        <span class="nav-icon">📈</span> My Progress
+      </div>
+      <div class="nav-item" onclick="showSection('badges', this)">
+        <span class="nav-icon">🏆</span> Badges
+      </div>
+      <div class="nav-item" onclick="showSection('admin', this)">
+        <span class="nav-icon">⚙</span> Admin Panel
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar" id="sideAvatar">R</div>
+          <div class="user-info">
+            <div class="user-name" id="sideUser">Rahul Sharma</div>
+            <div class="user-roll" id="sideRoll">CS2024001</div>
+          </div>
+          <span style="cursor:pointer;color:var(--muted);font-size:0.9rem;" onclick="doLogout()" title="Logout">⏻</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+      <!-- ── DASHBOARD ── -->
+      <section id="sec-dashboard" class="fade-in">
+        <div class="page-header">
+          <div class="breadcrumb"><span>VirtuLab</span> › <span class="active">Dashboard</span></div>
+          <div class="page-title">⊞ Dashboard</div>
+          <div class="page-sub">Welcome back, <span id="welcomeName">Rahul</span>. You last visited 2 hours ago.</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="card">
+            <div class="card-title">Experiments Done</div>
+            <div class="stat-val stat-accent">12</div>
+            <div class="stat-label">of 24 total</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:50%;background:var(--accent)"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">DELD Progress</div>
+            <div class="stat-val stat-purple">68%</div>
+            <div class="stat-label">Logic circuits</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:68%;background:var(--accent2)"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">CG Progress</div>
+            <div class="stat-val stat-green">42%</div>
+            <div class="stat-label">Graphics algorithms</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--accent3)"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Lab Time</div>
+            <div class="stat-val" style="color:var(--warn)">14h</div>
+            <div class="stat-label">This semester</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:35%;background:var(--warn)"></div></div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-bottom:1.5rem;">
+          <div class="col card">
+            <div class="card-title">Weekly Activity</div>
+            <div class="chart-wrap" id="activityChart"></div>
+          </div>
+          <div class="col card">
+            <div class="card-title">Recent Activity</div>
+            <div style="font-size:0.85rem;line-height:2;">
+              <div>✅ <span style="color:var(--muted)">Completed</span> Full Adder simulation</div>
+              <div>✅ <span style="color:var(--muted)">Generated</span> Bresenham C++ code</div>
+              <div>⏳ <span style="color:var(--muted)">In Progress</span> JK Flip-Flop</div>
+              <div>✅ <span style="color:var(--muted)">Completed</span> DDA Line Algorithm</div>
+              <div>⭐ <span style="color:var(--warn)">Badge Earned</span> Logic Master</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="module-grid">
+          <div class="module-card" onclick="showSection('gates', document.querySelector('.nav-item:nth-child(6)'))">
+            <div class="mod-icon">⚡</div>
+            <h3>Digital Electronics & Logic Design</h3>
+            <p>Simulate logic gates, flip-flops, combinational circuits, and build custom circuits with drag-and-drop.</p>
+            <div>
+              <span class="tag tag-cyan">AND/OR/NOT</span>
+              <span class="tag tag-cyan">Flip-Flops</span>
+              <span class="tag tag-cyan">Adders</span>
+              <span class="tag tag-cyan">MUX/DEMUX</span>
+            </div>
+            <div style="margin-top:1rem;">
+              <div class="progress-bar"><div class="progress-fill" style="width:68%;background:var(--accent2)"></div></div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;font-family:var(--mono);">68% complete</div>
+            </div>
+          </div>
+          <div class="module-card" onclick="showSection('drawing', document.querySelector('.nav-item:nth-child(13)'))">
+            <div class="mod-icon">🎨</div>
+            <h3>Computer Graphics Laboratory</h3>
+            <p>Implement DDA, Bresenham, 2D/3D transformations, clipping algorithms, Bezier curves with C++ code generation.</p>
+            <div>
+              <span class="tag tag-purple">DDA</span>
+              <span class="tag tag-purple">Bresenham</span>
+              <span class="tag tag-purple">Bezier</span>
+              <span class="tag tag-purple">OpenGL</span>
+            </div>
+            <div style="margin-top:1rem;">
+              <div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--accent3)"></div></div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;font-family:var(--mono);">42% complete</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Suggested Practice</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem;">
+            <span class="tag tag-warn">⚠ T Flip-Flop (not started)</span>
+            <span class="tag tag-warn">⚠ Cohen-Sutherland Clipping</span>
+            <span class="tag tag-warn">⚠ 3D Rotation</span>
+            <span class="tag tag-green">▶ Resume: JK Flip-Flop</span>
+            <span class="tag tag-cyan">✦ Try Circuit Builder</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── GATES ── -->
+      <section id="sec-gates" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>DELD</span> › <span class="active">Logic Gates</span></div>
+          <div class="page-title">⊕ Logic Gates Simulator</div>
+          <div class="page-sub">Toggle inputs A and B to see output. Observe truth table updates in real-time.</div>
+        </div>
+
+        <div class="row" style="margin-bottom:1.5rem;align-items:flex-start;">
+          <div class="card" style="width:220px;flex-shrink:0;">
+            <div class="card-title">Select Gate</div>
+            <ul class="topic-list" id="gateList">
+              <li class="topic-item active" onclick="selectGate('AND',this)" style="color:var(--accent);">
+                <span class="topic-left"><span class="check-circle done">✓</span>AND Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('OR',this)">
+                <span class="topic-left"><span class="check-circle done">✓</span>OR Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('NOT',this)">
+                <span class="topic-left"><span class="check-circle done">✓</span>NOT Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('NAND',this)">
+                <span class="topic-left"><span class="check-circle done">✓</span>NAND Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('NOR',this)">
+                <span class="topic-left"><span class="check-circle"></span>NOR Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('XOR',this)">
+                <span class="topic-left"><span class="check-circle"></span>XOR Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('XNOR',this)">
+                <span class="topic-left"><span class="check-circle"></span>XNOR Gate</span>
+              </li>
+              <li class="topic-item" onclick="selectGate('BUFFER',this)">
+                <span class="topic-left"><span class="check-circle"></span>BUFFER</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="col">
+            <div class="sim-wrap">
+              <div class="sim-header">
+                <span class="sim-title" id="gateTitle">AND Gate Simulator</span>
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="btn btn-ghost btn-sm" onclick="downloadGateCode()">⬇ C++ Code</button>
+                  <button class="btn btn-ghost btn-sm" onclick="exportTruth()">⬇ PDF</button>
+                </div>
+              </div>
+              <div class="sim-body">
+                <div class="gate-display">
+                  <div>
+                    <div class="input-row">
+                      <div>
+                        <div style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);margin-bottom:0.3rem;">INPUT A</div>
+                        <button class="toggle-btn" id="btnA" onclick="toggleInput('A')">0</button>
+                      </div>
+                      <div id="inputBWrap">
+                        <div style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);margin-bottom:0.3rem;">INPUT B</div>
+                        <button class="toggle-btn" id="btnB" onclick="toggleInput('B')">0</button>
+                      </div>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;font-family:var(--mono);">Click to toggle inputs</div>
+                  </div>
+                  <div id="gateSVG" style="flex:1;display:flex;justify-content:center;"></div>
+                  <div>
+                    <div style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);margin-bottom:0.5rem;text-align:center;">OUTPUT</div>
+                    <div class="output-led" id="outputLed">0</div>
+                  </div>
+                </div>
+                <hr class="sep">
+                <div class="card-title">Truth Table</div>
+                <div id="truthTableWrap"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── COMBINATIONAL ── -->
+      <section id="sec-combinational" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>DELD</span> › <span class="active">Combinational Circuits</span></div>
+          <div class="page-title">⊗ Combinational Circuits</div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="setTab('halfAdder',this)">Half Adder</div>
+          <div class="tab" onclick="setTab('fullAdder',this)">Full Adder</div>
+          <div class="tab" onclick="setTab('mux',this)">MUX 4:1</div>
+          <div class="tab" onclick="setTab('decoder',this)">2:4 Decoder</div>
+          <div class="tab" onclick="setTab('encoder',this)">Encoder</div>
+        </div>
+
+        <div id="tab-halfAdder">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">Half Adder Simulator</div>
+              <div style="display:flex;gap:1rem;margin:1rem 0;align-items:center;">
+                <div>
+                  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">A</div>
+                  <button class="toggle-btn" id="haA" onclick="updateHA()">0</button>
+                </div>
+                <div>
+                  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">B</div>
+                  <button class="toggle-btn" id="haB" onclick="updateHA()">0</button>
+                </div>
+                <div style="font-size:1.5rem;color:var(--muted)">→</div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">SUM</div>
+                  <div class="output-led" id="haSum">0</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">CARRY</div>
+                  <div class="output-led" id="haCarry">0</div>
+                </div>
+              </div>
+              <div class="alert alert-info">Half Adder: SUM = A⊕B, CARRY = A·B</div>
+              <table>
+                <tr><th>A</th><th>B</th><th>SUM (A⊕B)</th><th>CARRY (A·B)</th></tr>
+                <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+                <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+                <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+                <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+              </table>
+            </div>
+            <div class="col card">
+              <div class="card-title">Expression & Logic</div>
+              <div style="background:var(--surface2);border-radius:8px;padding:1rem;font-family:var(--mono);line-height:2;font-size:0.875rem;">
+                <div style="color:var(--accent);">SUM  = A XOR B = A ⊕ B</div>
+                <div style="color:var(--accent2);">CARRY = A AND B = A · B</div>
+              </div>
+              <div style="margin-top:1rem;" class="card-title">Gate Implementation</div>
+              <div style="padding:1rem;text-align:center;">
+                <svg width="280" height="100" viewBox="0 0 280 100">
+                  <line x1="10" y1="35" x2="80" y2="35" stroke="#00e5ff" stroke-width="1.5"/>
+                  <line x1="10" y1="65" x2="80" y2="65" stroke="#00e5ff" stroke-width="1.5"/>
+                  <text x="5" y="38" fill="#64748b" font-size="11" font-family="Space Mono">A</text>
+                  <text x="5" y="68" fill="#64748b" font-size="11" font-family="Space Mono">B</text>
+                  <!-- XOR gate symbol -->
+                  <path d="M80,25 Q110,50 80,75 Q100,65 110,50 Q100,35 80,25" fill="none" stroke="#7c3aed" stroke-width="2"/>
+                  <path d="M76,25 Q86,50 76,75" fill="none" stroke="#7c3aed" stroke-width="2"/>
+                  <text x="89" y="54" fill="#a78bfa" font-size="10" font-family="Space Mono">XOR</text>
+                  <line x1="110" y1="50" x2="140" y2="50" stroke="#00e5ff" stroke-width="1.5"/>
+                  <text x="145" y="54" fill="#10b981" font-size="10" font-family="Space Mono">SUM</text>
+                  <!-- AND gate -->
+                  <line x1="10" y1="35" x2="10" y2="82" stroke="#64748b" stroke-width="1" stroke-dasharray="3"/>
+                  <line x1="10" y1="82" x2="170" y2="82" stroke="#64748b" stroke-width="1" stroke-dasharray="3"/>
+                  <line x1="10" y1="65" x2="10" y2="92" stroke="#64748b" stroke-width="1" stroke-dasharray="3"/>
+                  <line x1="10" y1="92" x2="170" y2="92" stroke="#64748b" stroke-width="1" stroke-dasharray="3"/>
+                  <rect x="170" y="78" width="40" height="18" rx="3" fill="none" stroke="#f59e0b" stroke-width="2"/>
+                  <text x="174" y="91" fill="#f59e0b" font-size="9" font-family="Space Mono">AND</text>
+                  <line x1="210" y1="87" x2="240" y2="87" stroke="#00e5ff" stroke-width="1.5"/>
+                  <text x="242" y="91" fill="#10b981" font-size="10" font-family="Space Mono">CRY</text>
+                </svg>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="showCppCode('halfAdder')">View C++ Code</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-fullAdder" class="hidden">
+          <div class="card">
+            <div class="card-title">Full Adder Simulator</div>
+            <div style="display:flex;gap:1rem;margin:1rem 0;align-items:center;flex-wrap:wrap;">
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">A</div>
+                <button class="toggle-btn" id="faA" onclick="updateFA()">0</button>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">B</div>
+                <button class="toggle-btn" id="faB" onclick="updateFA()">0</button>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">Cin</div>
+                <button class="toggle-btn" id="faCin" onclick="updateFA()">0</button>
+              </div>
+              <div style="font-size:1.5rem;color:var(--muted)">→</div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">SUM</div>
+                <div class="output-led" id="faSum">0</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">CARRY</div>
+                <div class="output-led" id="faCarry">0</div>
+              </div>
+            </div>
+            <div class="alert alert-info">Full Adder: SUM = A⊕B⊕Cin, CARRY = A·B + Cin·(A⊕B)</div>
+            <table>
+              <tr><th>A</th><th>B</th><th>Cin</th><th>SUM</th><th>CARRY</th></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+              <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+              <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+              <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+              <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+              <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+              <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td><td class="val-1">1</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-mux" class="hidden">
+          <div class="card">
+            <div class="card-title">4:1 Multiplexer</div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;align-items:flex-start;">
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">DATA INPUTS</div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">I0</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mI0" onclick="updateMux()">0</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">I1</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mI1" onclick="updateMux()">0</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">I2</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mI2" onclick="updateMux()">0</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">I3</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mI3" onclick="updateMux()">0</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">SELECT LINES</div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">S0</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mS0" onclick="updateMux()">0</button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);width:20px;">S1</span>
+                    <button class="toggle-btn" style="width:40px;height:40px;" id="mS1" onclick="updateMux()">0</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;font-size:1.5rem;color:var(--muted);">→</div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.3rem;">OUTPUT Y</div>
+                <div class="output-led" id="muxOut">0</div>
+              </div>
+            </div>
+            <div class="alert alert-info" id="muxInfo">Selected Input: I0 (S1=0, S0=0) → Y = I0 = 0</div>
+          </div>
+        </div>
+
+        <div id="tab-decoder" class="hidden">
+          <div class="card">
+            <div class="card-title">2:4 Decoder</div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;align-items:flex-start;">
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">INPUTS</div>
+                <div style="display:flex;gap:0.5rem;">
+                  <div style="text-align:center;">
+                    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">A1</div>
+                    <button class="toggle-btn" id="decA1" onclick="updateDecoder()">0</button>
+                  </div>
+                  <div style="text-align:center;">
+                    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">A0</div>
+                    <button class="toggle-btn" id="decA0" onclick="updateDecoder()">0</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;font-size:1.5rem;color:var(--muted);">→</div>
+              <div>
+                <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">OUTPUTS</div>
+                <div style="display:flex;gap:0.5rem;">
+                  <div style="text-align:center;"><div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">D0</div><div class="output-led" id="decD0">0</div></div>
+                  <div style="text-align:center;"><div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">D1</div><div class="output-led" id="decD1">0</div></div>
+                  <div style="text-align:center;"><div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">D2</div><div class="output-led" id="decD2">0</div></div>
+                  <div style="text-align:center;"><div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">D3</div><div class="output-led" id="decD3">0</div></div>
+                </div>
+              </div>
+            </div>
+            <table>
+              <tr><th>A1</th><th>A0</th><th>D0</th><th>D1</th><th>D2</th><th>D3</th></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+              <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+              <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+              <tr><td class="val-1">1</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-encoder" class="hidden">
+          <div class="card">
+            <div class="card-title">4:2 Priority Encoder</div>
+            <div class="alert alert-info">Encodes active-high input to binary. Highest input number takes priority.</div>
+            <table>
+              <tr><th>I3</th><th>I2</th><th>I1</th><th>I0</th><th>A1</th><th>A0</th></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td class="val-0">0</td></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">X</td><td class="val-0">0</td><td class="val-1">1</td></tr>
+              <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">X</td><td class="val-0">X</td><td class="val-1">1</td><td class="val-0">0</td></tr>
+              <tr><td class="val-1">1</td><td class="val-0">X</td><td class="val-0">X</td><td class="val-0">X</td><td class="val-1">1</td><td class="val-1">1</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── SEQUENTIAL ── -->
+      <section id="sec-sequential" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>DELD</span> › <span class="active">Sequential Circuits</span></div>
+          <div class="page-title">↺ Flip-Flop Simulator</div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="setFFTab('sr',this)">SR</div>
+          <div class="tab" onclick="setFFTab('jk',this)">JK</div>
+          <div class="tab" onclick="setFFTab('d',this)">D</div>
+          <div class="tab" onclick="setFFTab('t',this)">T</div>
+        </div>
+
+        <div id="ff-sr">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">SR Flip-Flop</div>
+              <div style="display:flex;gap:1rem;align-items:center;margin:1rem 0;flex-wrap:wrap;">
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">S (Set)</div>
+                  <button class="toggle-btn" id="srS" onclick="updateSR()">0</button>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">R (Reset)</div>
+                  <button class="toggle-btn" id="srR" onclick="updateSR()">0</button>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">CLK ▾</div>
+                  <button class="toggle-btn" id="srClk" onclick="triggerClk('sr')">0</button>
+                </div>
+                <div style="font-size:1.5rem;color:var(--muted);">→</div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">Q</div>
+                  <div class="output-led" id="srQ">0</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">Q'</div>
+                  <div class="output-led" id="srQn">1</div>
+                </div>
+              </div>
+              <div class="alert" id="srState" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--accent);">State: No Change (Hold)</div>
+              <table class="ff-table" style="margin-top:1rem;">
+                <tr><th>S</th><th>R</th><th>Q(next)</th><th>State</th></tr>
+                <tr><td class="val-0">0</td><td class="val-0">0</td><td>Q</td><td style="color:var(--muted)">No Change</td></tr>
+                <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td style="color:var(--accent2)">Reset</td></tr>
+                <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td style="color:var(--accent3)">Set</td></tr>
+                <tr><td class="val-1">1</td><td class="val-1">1</td><td>X</td><td style="color:var(--danger)">Invalid!</td></tr>
+              </table>
+            </div>
+            <div class="col card">
+              <div class="card-title">Timing Waveform</div>
+              <div id="srWaveform" style="padding:0.5rem 0;"></div>
+              <button class="btn btn-ghost btn-sm" onclick="showCppCode('srFF')" style="margin-top:1rem;">View C++ Code</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ff-jk" class="hidden">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">JK Flip-Flop</div>
+              <div style="display:flex;gap:1rem;align-items:center;margin:1rem 0;flex-wrap:wrap;">
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">J</div>
+                  <button class="toggle-btn" id="jkJ" onclick="updateJK()">0</button>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">K</div>
+                  <button class="toggle-btn" id="jkK" onclick="updateJK()">0</button>
+                </div>
+                <div style="font-size:1.5rem;color:var(--muted);">→</div>
+                <div style="text-align:center;">
+                  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">Q</div>
+                  <div class="output-led" id="jkQ">0</div>
+                </div>
+              </div>
+              <div class="alert" id="jkState" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--accent);">State: No Change</div>
+              <table class="ff-table" style="margin-top:1rem;">
+                <tr><th>J</th><th>K</th><th>Q(next)</th><th>State</th></tr>
+                <tr><td class="val-0">0</td><td class="val-0">0</td><td>Q</td><td style="color:var(--muted)">No Change</td></tr>
+                <tr><td class="val-0">0</td><td class="val-1">1</td><td class="val-0">0</td><td style="color:var(--accent2)">Reset</td></tr>
+                <tr><td class="val-1">1</td><td class="val-0">0</td><td class="val-1">1</td><td style="color:var(--accent3)">Set</td></tr>
+                <tr><td class="val-1">1</td><td class="val-1">1</td><td>Q'</td><td style="color:var(--warn)">Toggle</td></tr>
+              </table>
+            </div>
+            <div class="col card">
+              <div class="card-title">JK Advantage</div>
+              <div class="alert alert-success">JK Flip-Flop eliminates the invalid state of SR. When J=1 & K=1, output toggles!</div>
+              <button class="btn btn-ghost btn-sm" onclick="showCppCode('jkFF')" style="margin-top:1rem;">View C++ Code</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ff-d" class="hidden">
+          <div class="card">
+            <div class="card-title">D Flip-Flop (Data/Delay)</div>
+            <div style="display:flex;gap:1rem;align-items:center;margin:1rem 0;">
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">D</div>
+                <button class="toggle-btn" id="dD" onclick="updateD()">0</button>
+              </div>
+              <div style="font-size:1.5rem;color:var(--muted);">→</div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">Q</div>
+                <div class="output-led" id="dQ">0</div>
+              </div>
+            </div>
+            <div class="alert alert-info">D Flip-Flop: Q(next) = D. Output follows input on clock edge.</div>
+            <table class="ff-table">
+              <tr><th>D</th><th>Q(next)</th></tr>
+              <tr><td class="val-0">0</td><td class="val-0">0</td></tr>
+              <tr><td class="val-1">1</td><td class="val-1">1</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div id="ff-t" class="hidden">
+          <div class="card">
+            <div class="card-title">T Flip-Flop (Toggle)</div>
+            <div style="display:flex;gap:1rem;align-items:center;margin:1rem 0;">
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">T</div>
+                <button class="toggle-btn" id="tT" onclick="updateT()">0</button>
+              </div>
+              <div style="font-size:1.5rem;color:var(--muted);">→</div>
+              <div style="text-align:center;">
+                <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;">Q</div>
+                <div class="output-led" id="tQ">0</div>
+              </div>
+            </div>
+            <div class="alert" id="tState" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.2);color:var(--accent);">State: No Change</div>
+            <table class="ff-table">
+              <tr><th>T</th><th>Q(next)</th><th>State</th></tr>
+              <tr><td class="val-0">0</td><td>Q</td><td style="color:var(--muted)">Hold</td></tr>
+              <tr><td class="val-1">1</td><td>Q'</td><td style="color:var(--warn)">Toggle</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TRUTH TABLE GENERATOR ── -->
+      <section id="sec-truthtable" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>DELD</span> › <span class="active">Truth Table Generator</span></div>
+          <div class="page-title">⊞ Truth Table Generator</div>
+        </div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="card" style="width:280px;flex-shrink:0;">
+            <div class="card-title">Configuration</div>
+            <div class="form-group">
+              <label>Number of Inputs</label>
+              <select id="ttInputs" onchange="genTruthTable()">
+                <option value="2">2 inputs</option>
+                <option value="3">3 inputs</option>
+                <option value="4">4 inputs</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Expression</label>
+              <input type="text" id="ttExpr" value="A AND B" placeholder="e.g. (A OR B) AND C" />
+            </div>
+            <button class="btn btn-primary" onclick="genTruthTable()" style="margin-bottom:0.75rem;">Generate Table</button>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="exportTruth()">⬇ Export PDF/CSV</button>
+          </div>
+          <div class="col">
+            <div class="card">
+              <div class="card-title">Generated Truth Table</div>
+              <div id="genTruthWrap"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CIRCUIT BUILDER ── -->
+      <section id="sec-circuit" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>DELD</span> › <span class="active">Circuit Builder</span></div>
+          <div class="page-title">⚡ Interactive Circuit Builder</div>
+        </div>
+        <div class="alert alert-warn">🧪 Demo: Use the palette to place components. Full drag-and-drop simulation shown below.</div>
+        <div style="display:flex;gap:1rem;align-items:flex-start;">
+          <div class="card" style="width:140px;flex-shrink:0;">
+            <div class="card-title">Gate Palette</div>
+            <div id="palette" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+          </div>
+          <div class="col">
+            <canvas id="circuitCanvas" width="600" height="380" style="width:100%;"></canvas>
+            <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--muted);font-family:var(--mono);">
+              Click canvas to place selected gate • Wire: Click output → input terminal
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CG DRAWING ── -->
+      <section id="sec-drawing" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>CG</span> › <span class="active">Line & Shape Drawing</span></div>
+          <div class="page-title">∕ Line Drawing Algorithms</div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="setCGTab('dda',this)">DDA Algorithm</div>
+          <div class="tab" onclick="setCGTab('bresenham',this)">Bresenham Line</div>
+          <div class="tab" onclick="setCGTab('midcircle',this)">Midpoint Circle</div>
+        </div>
+
+        <div id="cg-dda">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">DDA Line Algorithm</div>
+              <div class="cg-controls">
+                <div class="ctrl-group">
+                  <span class="ctrl-label">x1</span>
+                  <input type="range" id="ddaX1" min="0" max="400" value="50" oninput="drawDDA()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">y1</span>
+                  <input type="range" id="ddaY1" min="0" max="280" value="240" oninput="drawDDA()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">x2</span>
+                  <input type="range" id="ddaX2" min="0" max="400" value="350" oninput="drawDDA()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">y2</span>
+                  <input type="range" id="ddaY2" min="0" max="280" value="50" oninput="drawDDA()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">Color</span>
+                  <input type="color" id="ddaColor" value="#00e5ff" oninput="drawDDA()">
+                </div>
+              </div>
+              <canvas id="ddaCanvas" width="420" height="280" style="width:100%;"></canvas>
+            </div>
+            <div class="col">
+              <div class="card" style="margin-bottom:1rem;">
+                <div class="card-title">Algorithm Steps</div>
+                <div id="ddaSteps" style="font-family:var(--mono);font-size:0.75rem;line-height:1.9;color:var(--muted);max-height:200px;overflow-y:auto;"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Generated C++ Code</div>
+                <div class="code-block">
+                  <button class="copy-btn" onclick="copyCG('dda')">copy</button>
+                  <pre id="ddaCppCode"></pre>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('dda')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cg-bresenham" class="hidden">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">Bresenham Line Algorithm</div>
+              <div class="cg-controls">
+                <div class="ctrl-group">
+                  <span class="ctrl-label">x1</span>
+                  <input type="range" id="brX1" min="0" max="400" value="30" oninput="drawBresenham()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">y1</span>
+                  <input type="range" id="brY1" min="0" max="280" value="250" oninput="drawBresenham()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">x2</span>
+                  <input type="range" id="brX2" min="0" max="400" value="380" oninput="drawBresenham()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">y2</span>
+                  <input type="range" id="brY2" min="0" max="280" value="40" oninput="drawBresenham()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">Color</span>
+                  <input type="color" id="brColor" value="#7c3aed" oninput="drawBresenham()">
+                </div>
+              </div>
+              <canvas id="brCanvas" width="420" height="280" style="width:100%;"></canvas>
+            </div>
+            <div class="col">
+              <div class="card" style="margin-bottom:1rem;">
+                <div class="card-title">Decision Parameter Steps</div>
+                <div id="brSteps" style="font-family:var(--mono);font-size:0.75rem;line-height:1.9;color:var(--muted);max-height:200px;overflow-y:auto;"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Generated C++ Code</div>
+                <div class="code-block">
+                  <button class="copy-btn" onclick="copyCG('br')">copy</button>
+                  <pre id="brCppCode"></pre>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('br')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cg-midcircle" class="hidden">
+          <div class="row" style="align-items:flex-start;">
+            <div class="col card">
+              <div class="card-title">Midpoint Circle Algorithm</div>
+              <div class="cg-controls">
+                <div class="ctrl-group">
+                  <span class="ctrl-label">cx</span>
+                  <input type="range" id="mcX" min="50" max="350" value="210" oninput="drawCircle()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">cy</span>
+                  <input type="range" id="mcY" min="50" max="230" value="140" oninput="drawCircle()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">r</span>
+                  <input type="range" id="mcR" min="10" max="120" value="70" oninput="drawCircle()">
+                </div>
+                <div class="ctrl-group">
+                  <span class="ctrl-label">Color</span>
+                  <input type="color" id="mcColor" value="#10b981" oninput="drawCircle()">
+                </div>
+              </div>
+              <canvas id="mcCanvas" width="420" height="280" style="width:100%;"></canvas>
+            </div>
+            <div class="col card">
+              <div class="card-title">Generated C++ Code (OpenGL)</div>
+              <div class="code-block">
+                <button class="copy-btn" onclick="copyCG('mc')">copy</button>
+                <pre id="mcCppCode"></pre>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('mc')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 2D TRANSFORMS ── -->
+      <section id="sec-transform2d" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>CG</span> › <span class="active">2D Transformations</span></div>
+          <div class="page-title">⇄ 2D Transformations</div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="set2DTab('translate',this)">Translation</div>
+          <div class="tab" onclick="set2DTab('rotate',this)">Rotation</div>
+          <div class="tab" onclick="set2DTab('scale',this)">Scaling</div>
+          <div class="tab" onclick="set2DTab('reflect',this)">Reflection</div>
+          <div class="tab" onclick="set2DTab('shear',this)">Shearing</div>
+        </div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="col card">
+            <div class="card-title">Interactive Canvas</div>
+            <div class="cg-controls" id="t2dControls"></div>
+            <canvas id="t2dCanvas" width="420" height="320" style="width:100%;"></canvas>
+          </div>
+          <div class="col">
+            <div class="card" style="margin-bottom:1rem;">
+              <div class="card-title">Transformation Matrix</div>
+              <div id="t2dMatrix" style="font-family:var(--mono);font-size:0.9rem;line-height:2;text-align:center;padding:1rem;"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Generated C++ Code</div>
+              <div class="code-block" style="max-height:280px;overflow-y:auto;">
+                <button class="copy-btn" onclick="copyCG('t2d')">copy</button>
+                <pre id="t2dCode"></pre>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('t2d')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 3D TRANSFORMS ── -->
+      <section id="sec-transform3d" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>CG</span> › <span class="active">3D Transformations</span></div>
+          <div class="page-title">◈ 3D Transformations & Projections</div>
+        </div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="col card">
+            <div class="card-title">3D Cube Renderer</div>
+            <div class="cg-controls">
+              <div class="ctrl-group">
+                <span class="ctrl-label">Rot X</span>
+                <input type="range" id="rx" min="0" max="360" value="30" oninput="draw3D()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Rot Y</span>
+                <input type="range" id="ry" min="0" max="360" value="45" oninput="draw3D()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Scale</span>
+                <input type="range" id="rs" min="30" max="150" value="80" oninput="draw3D()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">Proj</span>
+                <select id="projType" onchange="draw3D()" style="width:auto;padding:0.3rem;">
+                  <option value="ortho">Orthographic</option>
+                  <option value="persp">Perspective</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="canvas3d" width="420" height="320" style="width:100%;"></canvas>
+          </div>
+          <div class="col card">
+            <div class="card-title">Generated C++ Code (3D Rotation)</div>
+            <div class="code-block" style="max-height:350px;overflow-y:auto;">
+              <button class="copy-btn" onclick="copyCG('3d')">copy</button>
+              <pre id="code3d"></pre>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('3d')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CLIPPING ── -->
+      <section id="sec-clipping" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>CG</span> › <span class="active">Clipping</span></div>
+          <div class="page-title">✂ Cohen-Sutherland Line Clipping</div>
+        </div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="col card">
+            <div class="card-title">Clipping Window</div>
+            <div class="cg-controls">
+              <div class="ctrl-group">
+                <span class="ctrl-label">xmin</span>
+                <input type="range" id="cxmin" min="10" max="150" value="80" oninput="drawClipping()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">xmax</span>
+                <input type="range" id="cxmax" min="200" max="390" value="320" oninput="drawClipping()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">ymin</span>
+                <input type="range" id="cymin" min="10" max="130" value="60" oninput="drawClipping()">
+              </div>
+              <div class="ctrl-group">
+                <span class="ctrl-label">ymax</span>
+                <input type="range" id="cymax" min="150" max="270" value="220" oninput="drawClipping()">
+              </div>
+            </div>
+            <canvas id="clipCanvas" width="420" height="280" style="width:100%;"></canvas>
+            <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.5rem;" id="clipResult"></div>
+          </div>
+          <div class="col card">
+            <div class="card-title">Generated C++ Code</div>
+            <div class="code-block" style="max-height:400px;overflow-y:auto;">
+              <button class="copy-btn" onclick="copyCG('clip')">copy</button>
+              <pre id="clipCode"></pre>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('clip')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CURVES ── -->
+      <section id="sec-curves" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>CG</span> › <span class="active">Curves</span></div>
+          <div class="page-title">⌒ Bezier Curve</div>
+        </div>
+        <div class="row" style="align-items:flex-start;">
+          <div class="col card">
+            <div class="card-title">Interactive Bezier Curve (Drag Control Points)</div>
+            <canvas id="bezierCanvas" width="420" height="300" style="width:100%;cursor:move;" onmousedown="bezierMD(event)" onmousemove="bezierMM(event)" onmouseup="bezierMU()"></canvas>
+            <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.5rem;">Drag control points to reshape the curve</div>
+          </div>
+          <div class="col card">
+            <div class="card-title">Generated C++ Code (Bezier)</div>
+            <div class="code-block" style="max-height:400px;overflow-y:auto;">
+              <button class="copy-btn" onclick="copyCG('bezier')">copy</button>
+              <pre id="bezierCode"></pre>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCGCode('bezier')" style="margin-top:0.75rem;">⬇ Download .cpp</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PROGRESS ── -->
+      <section id="sec-progress" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>Student</span> › <span class="active">My Progress</span></div>
+          <div class="page-title">📈 Performance Analytics</div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="card">
+            <div class="card-title">DELD Topics</div>
+            <div class="stat-val stat-purple">8/12</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:66%;background:var(--accent2)"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">CG Topics</div>
+            <div class="stat-val stat-green">5/12</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:41%;background:var(--accent3)"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-title">C++ Downloads</div>
+            <div class="stat-val stat-accent">7</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:35%;background:var(--accent)"></div></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:1rem;align-items:flex-start;">
+          <div class="col card">
+            <div class="card-title">Topic Completion — DELD</div>
+            <ul class="topic-list">
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>AND/OR/NOT Gates</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>NAND/NOR Gates</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>XOR/XNOR Gates</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>Half Adder</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>Full Adder</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>MUX/DEMUX</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>SR Flip-Flop</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>JK Flip-Flop</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>D Flip-Flop</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>T Flip-Flop</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Encoder/Decoder</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Circuit Builder</span><span class="tag tag-warn">Pending</span></li>
+            </ul>
+          </div>
+          <div class="col card">
+            <div class="card-title">Topic Completion — CG</div>
+            <ul class="topic-list">
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>DDA Algorithm</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>Bresenham Line</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>Midpoint Circle</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>2D Translation</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item done"><span class="topic-left"><span class="check-circle done">✓</span>2D Rotation</span><span class="tag tag-green">Done</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>2D Scaling/Shear</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>3D Transforms</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Cohen-Sutherland</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Polygon Clipping</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Bezier Curves</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>B-Spline</span><span class="tag tag-warn">Pending</span></li>
+              <li class="topic-item"><span class="topic-left"><span class="check-circle"></span>Animation</span><span class="tag tag-warn">Pending</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── BADGES ── -->
+      <section id="sec-badges" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>Student</span> › <span class="active">Badges</span></div>
+          <div class="page-title">🏆 Achievement Badges</div>
+        </div>
+        <div class="alert alert-success">You've earned 2 out of 8 badges! Keep experimenting to unlock more.</div>
+        <div class="badges-grid" style="margin-top:1rem;">
+          <div class="badge-card earned">
+            <div class="badge-icon">⚡</div>
+            <div class="badge-name">Logic Master</div>
+            <div class="badge-desc">All basic gates completed</div>
+          </div>
+          <div class="badge-card earned">
+            <div class="badge-icon">➕</div>
+            <div class="badge-name">Adder Pro</div>
+            <div class="badge-desc">Half & Full adder done</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">🔁</div>
+            <div class="badge-name">Flip-Flop Expert</div>
+            <div class="badge-desc">Complete all 4 FFs</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">🎨</div>
+            <div class="badge-name">Pixel Artist</div>
+            <div class="badge-desc">Draw 5 shapes</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">🔄</div>
+            <div class="badge-name">Transform Pro</div>
+            <div class="badge-desc">All 2D transforms</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">✂</div>
+            <div class="badge-name">Clip Specialist</div>
+            <div class="badge-desc">Clipping algorithms done</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">🌐</div>
+            <div class="badge-name">3D Explorer</div>
+            <div class="badge-desc">Complete 3D module</div>
+          </div>
+          <div class="badge-card badge-locked">
+            <div class="badge-icon">👑</div>
+            <div class="badge-name">Lab Champion</div>
+            <div class="badge-desc">All experiments done</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ADMIN ── -->
+      <section id="sec-admin" class="fade-in hidden">
+        <div class="page-header">
+          <div class="breadcrumb"><span>Admin</span> › <span class="active">Dashboard</span></div>
+          <div class="page-title">⚙ Admin Dashboard</div>
+        </div>
+        <div class="stats-grid">
+          <div class="card">
+            <div class="card-title">Total Students</div>
+            <div class="stat-val stat-accent">48</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Active Today</div>
+            <div class="stat-val stat-green">12</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Avg DELD</div>
+            <div class="stat-val stat-purple">61%</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Avg CG</div>
+            <div class="stat-val" style="color:var(--warn)">38%</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Student Performance Table</div>
+          <table style="margin-top:0.75rem;">
+            <tr><th>Roll No</th><th>Name</th><th>DELD %</th><th>CG %</th><th>Lab Time</th><th>Status</th></tr>
+            <tr>
+              <td style="font-family:var(--mono);">CS2024001</td><td>Rahul Sharma</td>
+              <td><span class="chip chip-cyan">68%</span></td>
+              <td><span class="chip chip-cyan">42%</span></td>
+              <td>14h</td><td><span class="tag tag-green">Active</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);">CS2024002</td><td>Priya Patel</td>
+              <td><span class="chip chip-cyan">82%</span></td>
+              <td><span class="chip chip-cyan">75%</span></td>
+              <td>22h</td><td><span class="tag tag-green">Active</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);">CS2024003</td><td>Ankit Mehta</td>
+              <td><span class="chip chip-cyan">45%</span></td>
+              <td><span class="chip chip-cyan">20%</span></td>
+              <td>6h</td><td><span class="tag tag-warn">Low Activity</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);">CS2024004</td><td>Sneha Joshi</td>
+              <td><span class="chip chip-cyan">91%</span></td>
+              <td><span class="chip chip-cyan">88%</span></td>
+              <td>31h</td><td><span class="tag tag-green">Active</span></td>
+            </tr>
+            <tr>
+              <td style="font-family:var(--mono);">CS2024005</td><td>Vijay Kumar</td>
+              <td><span class="chip chip-red">28%</span></td>
+              <td><span class="chip chip-red">12%</span></td>
+              <td>2h</td><td><span class="tag tag-warn">At Risk</span></td>
+            </tr>
+          </table>
+          <div style="margin-top:1rem;display:flex;gap:0.75rem;">
+            <button class="btn btn-ghost btn-sm" onclick="alert('Report exported (demo)')">⬇ Export Report</button>
+            <button class="btn btn-ghost btn-sm" onclick="alert('Email sent (demo)')">✉ Notify At-Risk</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- C++ CODE MODAL -->
+<div id="cppModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;align-items:center;justify-content:center;padding:2rem;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:var(--mono);color:var(--accent);">C++ Code — <span id="modalTitle">Half Adder</span></span>
+      <span style="cursor:pointer;color:var(--muted);font-size:1.2rem;" onclick="closeModal()">✕</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:1.5rem;">
+      <div class="code-block" style="position:static;">
+        <button class="copy-btn" style="position:relative;top:0;right:0;margin-bottom:0.5rem;float:right;" onclick="copyModal()">copy</button>
+        <pre id="modalCode" style="white-space:pre-wrap;"></pre>
+      </div>
+    </div>
+    <div style="padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;gap:0.75rem;justify-content:flex-end;">
+      <button class="btn btn-ghost btn-sm" onclick="downloadModal()">⬇ Download .cpp</button>
+      <button class="btn btn-primary btn-sm" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let currentUser = null;
+let users = [
+  { name:'Rahul Sharma', roll:'CS2024001', email:'rahul@college.edu', pass:'password', dept:'Computer Science', year:'4th Year' }
+];
+let currentGate = 'AND';
+let inA = 0, inB = 0;
+let activeModal = '';
+
+// ════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════
+function showSignup() {
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('forgotForm').classList.add('hidden');
+  document.getElementById('signupForm').classList.remove('hidden');
+  document.getElementById('authTitle').textContent = 'Create Account';
+  document.getElementById('authSub').textContent = 'Join the Virtual Lab';
+}
+
+function showLogin() {
+  document.getElementById('signupForm').classList.add('hidden');
+  document.getElementById('forgotForm').classList.add('hidden');
+  document.getElementById('loginForm').classList.remove('hidden');
+  document.getElementById('authTitle').textContent = 'Welcome Back';
+  document.getElementById('authSub').textContent = 'Sign in to your laboratory account';
+}
+
+function showForgot() {
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('signupForm').classList.add('hidden');
+  document.getElementById('forgotForm').classList.remove('hidden');
+  document.getElementById('authTitle').textContent = 'Reset Password';
+  document.getElementById('authSub').textContent = 'Enter your registered email';
+}
+
+function doLogin() {
+  const id = document.getElementById('loginId').value;
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  
+  // Demo: any email/roll + any password
+  const user = users.find(u => u.email === id || u.roll === id);
+  if (!user) {
+    // Allow demo login
+    if (id.includes('@') || id.length > 3) {
+      currentUser = { name: 'Demo Student', roll: id, email: id };
+      launchApp();
+      return;
+    }
+    err.textContent = 'User not found. Please sign up.';
+    return;
+  }
+  if (pass && pass !== user.pass && pass !== 'demo') {
+    err.textContent = 'Incorrect password.';
+    return;
+  }
+  currentUser = user;
+  launchApp();
+}
+
+function adminLogin() {
+  currentUser = { name: 'Dr. Admin', roll: 'ADMIN', email: 'admin@college.edu' };
+  launchApp();
+  setTimeout(() => showSection('admin', document.querySelector('.nav-item:last-child')), 100);
+}
+
+function doSignup() {
+  const name = document.getElementById('regName').value;
+  const roll = document.getElementById('regRoll').value;
+  const email = document.getElementById('regEmail').value;
+  const pass = document.getElementById('regPass').value;
+  const pass2 = document.getElementById('regPass2').value;
+  const msg = document.getElementById('signupMsg');
+
+  if (!name || !roll || !email || !pass) { msg.style.color = 'var(--danger)'; msg.textContent = 'Please fill all fields.'; return; }
+  if (pass !== pass2) { msg.style.color = 'var(--danger)'; msg.textContent = 'Passwords do not match.'; return; }
+  if (pass.length < 6) { msg.style.color = 'var(--danger)'; msg.textContent = 'Password must be at least 6 characters.'; return; }
+
+  users.push({ name, roll, email, pass, dept: document.getElementById('regDept').value, year: document.getElementById('regYear').value });
+  msg.style.color = 'var(--accent3)';
+  msg.textContent = '✓ Account created! Signing you in...';
+  currentUser = { name, roll, email };
+  setTimeout(() => launchApp(), 800);
+}
+
+function launchApp() {
+  document.getElementById('authPage').classList.add('hidden');
+  document.getElementById('appPage').classList.remove('hidden');
+  document.getElementById('sideUser').textContent = currentUser.name;
+  document.getElementById('sideRoll').textContent = currentUser.roll;
+  document.getElementById('sideAvatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('welcomeName').textContent = currentUser.name.split(' ')[0];
+  initActivityChart();
+  initSRWaveform();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('appPage').classList.add('hidden');
+  document.getElementById('authPage').classList.remove('hidden');
+  showLogin();
+}
+
+// ════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════
+function showSection(id, el) {
+  document.querySelectorAll('main section').forEach(s => {
+    s.classList.add('hidden');
+    s.classList.remove('fade-in');
+  });
+  const sec = document.getElementById('sec-' + id);
+  sec.classList.remove('hidden');
+  setTimeout(() => sec.classList.add('fade-in'), 10);
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  // Init sub-modules
+  if (id === 'gates') { renderGateSVG(); renderTruthTable(); }
+  if (id === 'drawing') { setTimeout(() => { drawDDA(); drawBresenham(); drawCircle(); }, 50); }
+  if (id === 'transform2d') { set2DTab('translate', document.querySelector('#sec-transform2d .tab')); }
+  if (id === 'transform3d') { setTimeout(() => draw3D(), 50); }
+  if (id === 'clipping') { setTimeout(() => drawClipping(), 50); }
+  if (id === 'curves') { setTimeout(() => { initBezier(); drawBezier(); updateBezierCode(); }, 50); }
+  if (id === 'truthtable') { genTruthTable(); }
+  if (id === 'circuit') { initCircuitCanvas(); }
+}
+
+function setTab(id, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  document.getElementById('tab-' + id).classList.remove('hidden');
+  document.querySelectorAll('#sec-combinational .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setFFTab(id, el) {
+  document.querySelectorAll('[id^="ff-"]').forEach(t => t.classList.add('hidden'));
+  document.getElementById('ff-' + id).classList.remove('hidden');
+  document.querySelectorAll('#sec-sequential .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setCGTab(id, el) {
+  ['dda','bresenham','midcircle'].forEach(t => {
+    document.getElementById('cg-' + t).classList.add('hidden');
+  });
+  document.getElementById('cg-' + id).classList.remove('hidden');
+  document.querySelectorAll('#sec-drawing .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  setTimeout(() => { 
+    if(id==='dda') drawDDA();
+    if(id==='bresenham') drawBresenham();
+    if(id==='midcircle') drawCircle();
+  }, 30);
+}
+
+function set2DTab(id, el) {
+  const tabs = ['translate','rotate','scale','reflect','shear'];
+  document.querySelectorAll('#sec-transform2d .tab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  init2DTransform(id);
+}
+
+// ════════════════════════════════════════
+//  ACTIVITY CHART
+// ════════════════════════════════════════
+function initActivityChart() {
+  const data = [20,45,30,80,60,90,55];
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const wrap = document.getElementById('activityChart');
+  wrap.innerHTML = '';
+  data.forEach((v, i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    const h = Math.round(v * 0.9) + 'px';
+    col.innerHTML = `<div class="bar" style="height:${h};background:${i===5?'var(--accent)':'var(--accent2)'}"></div><div class="bar-lbl">${labels[i]}</div>`;
+    wrap.appendChild(col);
+  });
+}
+
+// ════════════════════════════════════════
+//  GATE SIMULATOR
+// ════════════════════════════════════════
+const gateLogic = {
+  AND: (a,b) => a & b, OR: (a,b) => a | b, NOT: (a) => a^1, NAND: (a,b) => (a&b)^1,
+  NOR: (a,b) => (a|b)^1, XOR: (a,b) => a^b, XNOR: (a,b) => (a^b)^1, BUFFER: (a) => a
+};
+
+function selectGate(gate, el) {
+  currentGate = gate;
+  document.querySelectorAll('#gateList .topic-item').forEach(i => { i.style.color = ''; });
+  el.style.color = 'var(--accent)';
+  const isUnary = gate === 'NOT' || gate === 'BUFFER';
+  document.getElementById('inputBWrap').style.opacity = isUnary ? '0.3' : '1';
+  document.getElementById('inputBWrap').style.pointerEvents = isUnary ? 'none' : '';
+  document.getElementById('gateTitle').textContent = gate + ' Gate Simulator';
+  inA = 0; inB = 0;
+  document.getElementById('btnA').textContent = '0'; document.getElementById('btnA').classList.remove('on');
+  document.getElementById('btnB').textContent = '0'; document.getElementById('btnB').classList.remove('on');
+  renderGateSVG();
+  renderTruthTable();
+}
+
+function toggleInput(x) {
+  if (x === 'A') { inA ^= 1; const b = document.getElementById('btnA'); b.textContent = inA; b.classList.toggle('on', inA === 1); }
+  else { inB ^= 1; const b = document.getElementById('btnB'); b.textContent = inB; b.classList.toggle('on', inB === 1); }
+  renderGateSVG();
+}
+
+function renderGateSVG() {
+  const isUnary = currentGate === 'NOT' || currentGate === 'BUFFER';
+  const out = isUnary ? gateLogic[currentGate](inA) : gateLogic[currentGate](inA, inB);
+  const led = document.getElementById('outputLed');
+  led.textContent = out;
+  led.classList.toggle('on', out === 1);
+
+  const colors = { AND:'#00e5ff', OR:'#7c3aed', NOT:'#ef4444', NAND:'#f59e0b', NOR:'#f59e0b', XOR:'#10b981', XNOR:'#10b981', BUFFER:'#64748b' };
+  const c = colors[currentGate] || '#00e5ff';
+
+  const gates = {
+    AND: `<path d="M30,15 L30,85 L70,85 Q100,85 100,50 Q100,15 70,15 Z" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    OR:  `<path d="M30,15 Q60,15 100,50 Q60,85 30,85 Q50,50 30,15Z" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    NOT: `<path d="M20,50 L90,15 L90,85 Z" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="96" cy="50" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    NAND:`<path d="M30,15 L30,85 L70,85 Q100,85 100,50 Q100,15 70,15 Z" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="106" cy="50" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    NOR: `<path d="M30,15 Q60,15 100,50 Q60,85 30,85 Q50,50 30,15Z" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="106" cy="50" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    XOR: `<path d="M30,15 Q60,15 100,50 Q60,85 30,85 Q50,50 30,15Z" fill="none" stroke="${c}" stroke-width="2.5"/><path d="M22,15 Q38,50 22,85" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    XNOR:`<path d="M30,15 Q60,15 100,50 Q60,85 30,85 Q50,50 30,15Z" fill="none" stroke="${c}" stroke-width="2.5"/><path d="M22,15 Q38,50 22,85" fill="none" stroke="${c}" stroke-width="2.5"/><circle cx="106" cy="50" r="6" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+    BUFFER:`<path d="M20,15 L110,50 L20,85 Z" fill="none" stroke="${c}" stroke-width="2.5"/>`,
+  };
+
+  document.getElementById('gateSVG').innerHTML = `
+    <svg width="160" height="100" viewBox="0 0 160 100">
+      <line x1="0" y1="35" x2="30" y2="35" stroke="${c}" stroke-width="1.5" opacity="${isUnary?0.3:1}"/>
+      <line x1="0" y1="65" x2="30" y2="65" stroke="${c}" stroke-width="1.5" opacity="${isUnary?0:1}"/>
+      <text x="3" y="30" fill="#64748b" font-size="10" font-family="Space Mono">A=${inA}</text>
+      <text x="3" y="60" fill="#64748b" font-size="10" font-family="Space Mono" opacity="${isUnary?0:1}">B=${inB}</text>
+      ${gates[currentGate] || ''}
+      <line x1="112" y1="50" x2="145" y2="50" stroke="${out?'var(--accent3)':'#334155'}" stroke-width="2.5"/>
+      <circle cx="150" cy="50" r="6" fill="${out?'var(--accent3)':'#1e2330'}" stroke="${out?'var(--accent3)':'#334155'}" stroke-width="1.5"/>
+    </svg>`;
+}
+
+function renderTruthTable() {
+  const isUnary = currentGate === 'NOT' || currentGate === 'BUFFER';
+  let html = '<table style="margin-top:1rem;">';
+  if (isUnary) {
+    html += '<tr><th>A</th><th>' + currentGate + '(A)</th></tr>';
+    [0,1].forEach(a => {
+      const o = gateLogic[currentGate](a);
+      html += `<tr><td class="${a?'val-1':'val-0'}">${a}</td><td class="${o?'val-1':'val-0'}">${o}</td></tr>`;
+    });
+  } else {
+    html += '<tr><th>A</th><th>B</th><th>Output</th></tr>';
+    [[0,0],[0,1],[1,0],[1,1]].forEach(([a,b]) => {
+      const o = gateLogic[currentGate](a, b);
+      const rowStyle = (a===inA && b===inB) ? 'background:rgba(0,229,255,0.08);' : '';
+      html += `<tr style="${rowStyle}"><td class="${a?'val-1':'val-0'}">${a}</td><td class="${b?'val-1':'val-0'}">${b}</td><td class="${o?'val-1':'val-0'}">${o}</td></tr>`;
+    });
+  }
+  html += '</table>';
+  document.getElementById('truthTableWrap').innerHTML = html;
+}
+
+// ════════════════════════════════════════
+//  COMBINATIONAL
+// ════════════════════════════════════════
+function updateHA() {
+  const a = parseInt(document.getElementById('haA').textContent);
+  const b = parseInt(document.getElementById('haB').textContent);
+  const sum = a^b, carry = a&b;
+  const s = document.getElementById('haSum'); s.textContent = sum; s.classList.toggle('on', sum===1);
+  const c = document.getElementById('haCarry'); c.textContent = carry; c.classList.toggle('on', carry===1);
+}
+
+// Toggle helper for combinational
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('toggle-btn') && !['btnA','btnB'].includes(e.target.id)) {
+    const v = parseInt(e.target.textContent) ^ 1;
+    e.target.textContent = v;
+    e.target.classList.toggle('on', v === 1);
+    const id = e.target.id;
+    if (['haA','haB'].includes(id)) updateHA();
+    else if (['faA','faB','faCin'].includes(id)) updateFA();
+    else if (id.startsWith('mI') || id.startsWith('mS')) updateMux();
+    else if (id.startsWith('dec')) updateDecoder();
+    else if (id.startsWith('sr')) updateSR();
+    else if (id.startsWith('jk')) updateJK();
+    else if (id === 'dD') updateD();
+    else if (id === 'tT') updateT();
+  }
+});
+
+function updateFA() {
+  const a = parseInt(document.getElementById('faA').textContent);
+  const b = parseInt(document.getElementById('faB').textContent);
+  const cin = parseInt(document.getElementById('faCin').textContent);
+  const sum = a^b^cin, carry = (a&b)|(cin&(a^b));
+  const s = document.getElementById('faSum'); s.textContent = sum; s.classList.toggle('on', sum===1);
+  const c = document.getElementById('faCarry'); c.textContent = carry; c.classList.toggle('on', carry===1);
+}
+
+function updateMux() {
+  const inputs = [
+    parseInt(document.getElementById('mI0').textContent),
+    parseInt(document.getElementById('mI1').textContent),
+    parseInt(document.getElementById('mI2').textContent),
+    parseInt(document.getElementById('mI3').textContent)
+  ];
+  const s0 = parseInt(document.getElementById('mS0').textContent);
+  const s1 = parseInt(document.getElementById('mS1').textContent);
+  const sel = s1*2 + s0;
+  const out = inputs[sel];
+  const o = document.getElementById('muxOut'); o.textContent = out; o.classList.toggle('on', out===1);
+  document.getElementById('muxInfo').textContent = `Selected Input: I${sel} (S1=${s1}, S0=${s0}) → Y = I${sel} = ${out}`;
+}
+
+function updateDecoder() {
+  const a1 = parseInt(document.getElementById('decA1').textContent);
+  const a0 = parseInt(document.getElementById('decA0').textContent);
+  const sel = a1*2 + a0;
+  [0,1,2,3].forEach(i => {
+    const d = document.getElementById('decD' + i);
+    const v = i === sel ? 1 : 0;
+    d.textContent = v; d.classList.toggle('on', v===1);
+  });
+}
+
+// ════════════════════════════════════════
+//  SEQUENTIAL
+// ════════════════════════════════════════
+let srQ = 0, jkQ = 0, dQ = 0, tQ = 0;
+
+function updateSR() {
+  const s = parseInt(document.getElementById('srS').textContent);
+  const r = parseInt(document.getElementById('srR').textContent);
+  const st = document.getElementById('srState');
+  let msg, color;
+  if (s===0 && r===0) { msg = 'State: No Change (Hold)'; color = 'rgba(0,229,255,0.2)'; }
+  else if (s===0 && r===1) { srQ = 0; msg = 'State: RESET → Q=0'; color = 'rgba(124,58,237,0.2)'; }
+  else if (s===1 && r===0) { srQ = 1; msg = 'State: SET → Q=1'; color = 'rgba(16,185,129,0.2)'; }
+  else { msg = '⚠ INVALID STATE (S=R=1)'; color = 'rgba(239,68,68,0.2)'; }
+  st.textContent = msg;
+  st.style.background = color;
+  const q = document.getElementById('srQ'); q.textContent = srQ; q.classList.toggle('on', srQ===1);
+  const qn = document.getElementById('srQn'); qn.textContent = srQ^1; qn.classList.toggle('on', (srQ^1)===1);
+}
+
+function triggerClk(type) {
+  const b = document.getElementById(type + 'Clk');
+  b.classList.add('on'); b.textContent = '1';
+  setTimeout(() => { b.classList.remove('on'); b.textContent = '0'; }, 300);
+}
+
+function updateJK() {
+  const j = parseInt(document.getElementById('jkJ').textContent);
+  const k = parseInt(document.getElementById('jkK').textContent);
+  const st = document.getElementById('jkState');
+  let msg, color;
+  if (j===0 && k===0) { msg = 'State: No Change'; color = 'rgba(0,229,255,0.1)'; }
+  else if (j===0 && k===1) { jkQ = 0; msg = 'State: RESET → Q=0'; color = 'rgba(124,58,237,0.1)'; }
+  else if (j===1 && k===0) { jkQ = 1; msg = 'State: SET → Q=1'; color = 'rgba(16,185,129,0.1)'; }
+  else { jkQ ^= 1; msg = 'State: TOGGLE → Q=' + jkQ; color = 'rgba(245,158,11,0.1)'; }
+  st.textContent = msg; st.style.background = color;
+  const q = document.getElementById('jkQ'); q.textContent = jkQ; q.classList.toggle('on', jkQ===1);
+}
+
+function updateD() {
+  const d = parseInt(document.getElementById('dD').textContent);
+  dQ = d;
+  const q = document.getElementById('dQ'); q.textContent = dQ; q.classList.toggle('on', dQ===1);
+}
+
+function updateT() {
+  const t = parseInt(document.getElementById('tT').textContent);
+  const st = document.getElementById('tState');
+  if (t === 1) { tQ ^= 1; st.textContent = 'State: TOGGLE → Q=' + tQ; st.style.background = 'rgba(245,158,11,0.1)'; }
+  else { st.textContent = 'State: HOLD → Q=' + tQ; st.style.background = 'rgba(0,229,255,0.08)'; }
+  const q = document.getElementById('tQ'); q.textContent = tQ; q.classList.toggle('on', tQ===1);
+}
+
+function initSRWaveform() {
+  const wrap = document.getElementById('srWaveform');
+  if (!wrap) return;
+  const signals = [
+    { name: 'CLK', pattern: [0,1,0,1,0,1,0,1] },
+    { name: 'S', pattern: [0,0,1,1,0,0,0,0] },
+    { name: 'R', pattern: [0,0,0,0,1,1,0,0] },
+    { name: 'Q', pattern: [0,0,1,1,1,0,0,0] }
+  ];
+  const colors = { CLK: '#64748b', S: '#00e5ff', R: '#7c3aed', Q: '#10b981' };
+  wrap.innerHTML = signals.map(s => `
+    <div class="signal-row">
+      <span class="signal-name">${s.name}</span>
+      <div class="signal-wave">
+        ${s.pattern.map(v => `<div style="flex:1;background:${v?colors[s.name]:'var(--surface2)'};border-right:1px solid var(--surface);"></div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════
+//  TRUTH TABLE GENERATOR
+// ════════════════════════════════════════
+function genTruthTable() {
+  const n = parseInt(document.getElementById('ttInputs').value) || 2;
+  const vars = ['A','B','C','D'].slice(0, n);
+  let html = '<table><tr>' + vars.map(v => `<th>${v}</th>`).join('') + '<th>Output</th></tr>';
+  for (let i = 0; i < (1 << n); i++) {
+    const vals = vars.map((_, j) => (i >> (n-1-j)) & 1);
+    const out = vals.reduce((a, v) => a & v, 1); // AND all by default
+    html += '<tr>' + vals.map(v => `<td class="${v?'val-1':'val-0'}">${v}</td>`).join('') + `<td class="${out?'val-1':'val-0'}">${out}</td></tr>`;
+  }
+  html += '</table>';
+  document.getElementById('genTruthWrap').innerHTML = html;
+}
+
+// ════════════════════════════════════════
+//  CIRCUIT BUILDER
+// ════════════════════════════════════════
+let placedGates = [], selectedPaletteGate = 'AND';
+
+function initCircuitCanvas() {
+  const palette = document.getElementById('palette');
+  const gNames = ['AND','OR','NOT','NAND','NOR','XOR'];
+  palette.innerHTML = gNames.map(g => 
+    `<button class="btn btn-ghost btn-sm" onclick="selectPalette('${g}')" id="pal_${g}" style="font-family:var(--mono);">${g}</button>`
+  ).join('');
+
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    placedGates.push({ type: selectedPaletteGate, x, y });
+    drawCircuitCanvas(ctx, canvas);
+  };
+  drawCircuitCanvas(ctx, canvas);
+}
+
+function selectPalette(g) {
+  selectedPaletteGate = g;
+  document.querySelectorAll('[id^="pal_"]').forEach(b => b.style.borderColor = '');
+  document.getElementById('pal_' + g).style.borderColor = 'var(--accent)';
+}
+
+function drawCircuitCanvas(ctx, canvas) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#050709';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(0,229,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+  for (let y = 0; y < canvas.height; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+  // Draw gates
+  placedGates.forEach(g => drawGateOnCanvas(ctx, g.type, g.x, g.y));
+
+  if (placedGates.length === 0) {
+    ctx.fillStyle = '#1e2330';
+    ctx.font = '14px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click to place selected gate', canvas.width/2, canvas.height/2);
+  }
+}
+
+function drawGateOnCanvas(ctx, type, cx, cy) {
+  ctx.save();
+  ctx.translate(cx - 30, cy - 25);
+  ctx.strokeStyle = { AND:'#00e5ff', OR:'#7c3aed', NOT:'#ef4444', NAND:'#f59e0b', NOR:'#f59e0b', XOR:'#10b981' }[type] || '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (type === 'AND' || type === 'NAND') {
+    ctx.moveTo(0, 0); ctx.lineTo(0, 50); ctx.lineTo(25, 50);
+    ctx.arc(25, 25, 25, Math.PI/2, -Math.PI/2, true);
+    ctx.lineTo(0, 0);
+  } else if (type === 'OR' || type === 'NOR' || type === 'XOR') {
+    ctx.moveTo(0, 0); ctx.quadraticCurveTo(15, 25, 0, 50);
+    ctx.quadraticCurveTo(25, 50, 50, 25);
+    ctx.quadraticCurveTo(25, 0, 0, 0);
+    if (type === 'XOR') {
+      ctx.stroke(); ctx.beginPath();
+      ctx.moveTo(-5, 0); ctx.quadraticCurveTo(10, 25, -5, 50);
+    }
+  } else if (type === 'NOT') {
+    ctx.moveTo(0, 0); ctx.lineTo(40, 25); ctx.lineTo(0, 50); ctx.closePath();
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(44, 25, 4, 0, Math.PI*2);
+  }
+  ctx.stroke();
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(type, 25, 25);
+  if (type === 'NAND' || type === 'NOR') {
+    ctx.beginPath(); ctx.arc(56, 25, 4, 0, Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════════════════
+//  DDA ALGORITHM
+// ════════════════════════════════════════
+function drawDDA() {
+  const canvas = document.getElementById('ddaCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const x1 = parseInt(document.getElementById('ddaX1').value);
+  const y1 = parseInt(document.getElementById('ddaY1').value);
+  const x2 = parseInt(document.getElementById('ddaX2').value);
+  const y2 = parseInt(document.getElementById('ddaY2').value);
+  const color = document.getElementById('ddaColor').value;
+
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+  ctx.drawImage; // axes
+  drawAxes(ctx, canvas.width, canvas.height);
+
+  // DDA
+  const dx = x2 - x1, dy = y2 - y1;
+  const steps = Math.max(Math.abs(dx), Math.abs(dy));
+  const xInc = dx / steps, yInc = dy / steps;
+  let x = x1, y = y1;
+  const pts = [];
+
+  ctx.fillStyle = color;
+  for (let i = 0; i <= steps; i++) {
+    const px = Math.round(x), py = Math.round(y);
+    ctx.fillRect(px - 1, py - 1, 2, 2);
+    pts.push({ x: px, y: py, xInc: xInc.toFixed(3), yInc: yInc.toFixed(3) });
+    x += xInc; y += yInc;
+  }
+
+  // Endpoint markers
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(x1, y1, 4, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x2, y2, 4, 0, Math.PI*2); ctx.stroke();
+
+  const stepsWrap = document.getElementById('ddaSteps');
+  stepsWrap.innerHTML = pts.slice(0, 12).map((p, i) => 
+    `<div style="color:var(--text)">Step ${i}: x=${p.x}, y=${p.y} <span style="color:var(--muted)">(Δx=${p.xInc}, Δy=${p.yInc})</span></div>`
+  ).join('') + (pts.length > 12 ? `<div style="color:var(--muted)">...${pts.length - 12} more steps</div>` : '');
+
+  const code = generateDDACode(x1, y1, x2, y2);
+  document.getElementById('ddaCppCode').innerHTML = highlightCpp(code);
+}
+
+function generateDDACode(x1, y1, x2, y2) {
+  return `// DDA Line Drawing Algorithm
+// VirtuLab — Computer Graphics Module
+// Generated for: (${x1},${y1}) → (${x2},${y2})
+
+#include <graphics.h>
+#include <cmath>
+#include <iostream>
+using namespace std;
+
+void DDA(int x1, int y1, int x2, int y2) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int steps = max(abs(dx), abs(dy));
+    
+    float xInc = (float)dx / steps;
+    float yInc = (float)dy / steps;
+    
+    float x = x1, y = y1;
+    
+    for (int i = 0; i <= steps; i++) {
+        putpixel(round(x), round(y), WHITE);
+        x += xInc;
+        y += yInc;
+    }
+}
+
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "");
+    
+    DDA(${x1}, ${y1}, ${x2}, ${y2});
+    
+    getch();
+    closegraph();
+    return 0;
+}`;
+}
+
+// ════════════════════════════════════════
+//  BRESENHAM
+// ════════════════════════════════════════
+function drawBresenham() {
+  const canvas = document.getElementById('brCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let x1 = parseInt(document.getElementById('brX1').value);
+  let y1 = parseInt(document.getElementById('brY1').value);
+  let x2 = parseInt(document.getElementById('brX2').value);
+  let y2 = parseInt(document.getElementById('brY2').value);
+  const color = document.getElementById('brColor').value;
+
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+  drawAxes(ctx, canvas.width, canvas.height);
+
+  let dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+  let sx = x1 < x2 ? 1 : -1, sy = y1 < y2 ? 1 : -1;
+  let err = dx - dy;
+  const pts = [], steps = [];
+  let x = x1, y = y1;
+
+  ctx.fillStyle = color;
+  for (let i = 0; i < 1000; i++) {
+    ctx.fillRect(x - 1, y - 1, 2, 2);
+    pts.push([x, y]);
+    const e2 = 2 * err;
+    const step = { x, y, err, e2 };
+    steps.push(step);
+    if (x === x2 && y === y2) break;
+    if (e2 > -dy) { err -= dy; x += sx; }
+    if (e2 < dx) { err += dx; y += sy; }
+  }
+
+  document.getElementById('brSteps').innerHTML = steps.slice(0, 10).map((s, i) =>
+    `<div>Step ${i}: (${s.x},${s.y}) err=${s.err} 2e=${s.e2}</div>`
+  ).join('');
+
+  const code = generateBresenhamCode(x1, y1, x2, y2);
+  document.getElementById('brCppCode').innerHTML = highlightCpp(code);
+}
+
+function generateBresenhamCode(x1, y1, x2, y2) {
+  return `// Bresenham Line Drawing Algorithm
+// VirtuLab — Computer Graphics Module
+// Generated for: (${x1},${y1}) → (${x2},${y2})
+
+#include <graphics.h>
+#include <cmath>
+using namespace std;
+
+void Bresenham(int x1, int y1, int x2, int y2) {
+    int dx = abs(x2 - x1);
+    int dy = abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+    
+    while (true) {
+        putpixel(x1, y1, WHITE);
+        if (x1 == x2 && y1 == y2) break;
+        
+        int e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x1 += sx; }
+        if (e2 <  dx) { err += dx; y1 += sy; }
+    }
+}
+
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "");
+    
+    Bresenham(${x1}, ${y1}, ${x2}, ${y2});
+    
+    getch();
+    closegraph();
+    return 0;
+}`;
+}
+
+// ════════════════════════════════════════
+//  MIDPOINT CIRCLE
+// ════════════════════════════════════════
+function drawCircle() {
+  const canvas = document.getElementById('mcCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = parseInt(document.getElementById('mcX').value);
+  const cy = parseInt(document.getElementById('mcY').value);
+  const r = parseInt(document.getElementById('mcR').value);
+  const color = document.getElementById('mcColor').value;
+
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+  drawAxes(ctx, canvas.width, canvas.height);
+
+  // Midpoint circle algorithm
+  let x = 0, y = r, d = 1 - r;
+  ctx.fillStyle = color;
+
+  function plot8(cx, cy, x, y) {
+    [[cx+x,cy+y],[cx-x,cy+y],[cx+x,cy-y],[cx-x,cy-y],
+     [cx+y,cy+x],[cx-y,cy+x],[cx+y,cy-x],[cx-y,cy-x]].forEach(([px,py]) => {
+      ctx.fillRect(px-1, py-1, 2, 2);
+    });
+  }
+
+  while (x <= y) {
+    plot8(cx, cy, x, y);
+    if (d < 0) d += 2*x + 3;
+    else { d += 2*(x-y) + 5; y--; }
+    x++;
+  }
+
+  // Center mark
+  ctx.strokeStyle = color; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.stroke();
+
+  const code = generateCircleCode(cx, cy, r);
+  document.getElementById('mcCppCode').innerHTML = highlightCpp(code);
+}
+
+function generateCircleCode(cx, cy, r) {
+  return `// Midpoint Circle Drawing Algorithm
+// VirtuLab — Computer Graphics Module
+// Center: (${cx},${cy}), Radius: ${r}
+
+#include <graphics.h>
+using namespace std;
+
+void plotCirclePoints(int cx, int cy, int x, int y) {
+    putpixel(cx+x, cy+y, WHITE);
+    putpixel(cx-x, cy+y, WHITE);
+    putpixel(cx+x, cy-y, WHITE);
+    putpixel(cx-x, cy-y, WHITE);
+    putpixel(cx+y, cy+x, WHITE);
+    putpixel(cx-y, cy+x, WHITE);
+    putpixel(cx+y, cy-x, WHITE);
+    putpixel(cx-y, cy-x, WHITE);
+}
+
+void MidpointCircle(int cx, int cy, int r) {
+    int x = 0, y = r;
+    int d = 1 - r;
+    
+    while (x <= y) {
+        plotCirclePoints(cx, cy, x, y);
+        if (d < 0) {
+            d += 2*x + 3;
+        } else {
+            d += 2*(x - y) + 5;
+            y--;
+        }
+        x++;
+    }
+}
+
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "");
+    MidpointCircle(${cx}, ${cy}, ${r});
+    getch(); closegraph();
+    return 0;
+}`;
+}
+
+// ════════════════════════════════════════
+//  2D TRANSFORMS
+// ════════════════════════════════════════
+let t2dParams = { tx:50, ty:30, angle:45, sx:1.5, sy:1.5, axis:'x', shx:0.5, shy:0 };
+let current2DMode = 'translate';
+
+const SHAPE_PTS = [[50,30],[150,30],[150,130],[50,130]]; // square
+
+function init2DTransform(mode) {
+  current2DMode = mode;
+  const ctrl = document.getElementById('t2dControls');
+  const configs = {
+    translate: `<div class="ctrl-group"><span class="ctrl-label">Tx</span><input type="range" id="t2d_tx" min="-150" max="150" value="50" oninput="update2D()"></div>
+                <div class="ctrl-group"><span class="ctrl-label">Ty</span><input type="range" id="t2d_ty" min="-150" max="150" value="30" oninput="update2D()"></div>`,
+    rotate:    `<div class="ctrl-group"><span class="ctrl-label">Angle</span><input type="range" id="t2d_angle" min="0" max="360" value="45" oninput="update2D()"></div>`,
+    scale:     `<div class="ctrl-group"><span class="ctrl-label">Sx</span><input type="range" id="t2d_sx" min="10" max="300" value="150" oninput="update2D()"></div>
+                <div class="ctrl-group"><span class="ctrl-label">Sy</span><input type="range" id="t2d_sy" min="10" max="300" value="150" oninput="update2D()"></div>`,
+    reflect:   `<div class="ctrl-group"><span class="ctrl-label">Axis</span><select id="t2d_axis" onchange="update2D()" style="width:auto;padding:0.3rem;"><option value="x">X-axis</option><option value="y">Y-axis</option><option value="o">Origin</option></select></div>`,
+    shear:     `<div class="ctrl-group"><span class="ctrl-label">Shx</span><input type="range" id="t2d_shx" min="-200" max="200" value="50" oninput="update2D()"></div>
+                <div class="ctrl-group"><span class="ctrl-label">Shy</span><input type="range" id="t2d_shy" min="-200" max="200" value="0" oninput="update2D()"></div>`,
+  };
+  ctrl.innerHTML = configs[mode] || '';
+  setTimeout(() => update2D(), 10);
+}
+
+function update2D() {
+  const canvas = document.getElementById('t2dCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+  
+  const W = canvas.width, H = canvas.height;
+  const originX = W/2, originY = H/2;
+
+  // Draw axes
+  ctx.strokeStyle = '#1e2330'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, originY); ctx.lineTo(W, originY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(originX, 0); ctx.lineTo(originX, H); ctx.stroke();
+
+  // Original shape (centered at origin)
+  const orig = [[-70,-50],[70,-50],[70,50],[-70,50]];
+  
+  // Draw original
+  ctx.strokeStyle = 'rgba(100,116,139,0.4)'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  orig.forEach((p, i) => {
+    const x = originX + p[0], y = originY + p[1];
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+
+  // Apply transform
+  let transformed = orig.map(([x, y]) => {
+    const mode = current2DMode;
+    if (mode === 'translate') {
+      const tx = parseFloat(document.getElementById('t2d_tx')?.value || 50);
+      const ty = parseFloat(document.getElementById('t2d_ty')?.value || 30);
+      return [x + tx, y + ty];
+    } else if (mode === 'rotate') {
+      const a = (parseFloat(document.getElementById('t2d_angle')?.value || 45)) * Math.PI / 180;
+      return [x*Math.cos(a) - y*Math.sin(a), x*Math.sin(a) + y*Math.cos(a)];
+    } else if (mode === 'scale') {
+      const sx = (parseFloat(document.getElementById('t2d_sx')?.value || 150)) / 100;
+      const sy = (parseFloat(document.getElementById('t2d_sy')?.value || 150)) / 100;
+      return [x * sx, y * sy];
+    } else if (mode === 'reflect') {
+      const axis = document.getElementById('t2d_axis')?.value || 'x';
+      if (axis === 'x') return [x, -y];
+      if (axis === 'y') return [-x, y];
+      return [-x, -y];
+    } else if (mode === 'shear') {
+      const shx = (parseFloat(document.getElementById('t2d_shx')?.value || 50)) / 100;
+      const shy = (parseFloat(document.getElementById('t2d_shy')?.value || 0)) / 100;
+      return [x + shx*y, y + shy*x];
+    }
+    return [x, y];
+  });
+
+  ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  transformed.forEach((p, i) => {
+    const x = originX + p[0], y = originY + p[1];
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.closePath(); ctx.stroke();
+
+  // Fill
+  ctx.fillStyle = 'rgba(0,229,255,0.06)';
+  ctx.fill();
+
+  // Matrix display
+  updateMatrixDisplay(current2DMode);
+  generate2DCode(current2DMode);
+}
+
+function updateMatrixDisplay(mode) {
+  const el = document.getElementById('t2dMatrix');
+  const matrices = {
+    translate: (tx, ty) => `[1  0  ${tx}]\n[0  1  ${ty}]\n[0  0   1 ]`,
+    rotate: (a) => { const r = a*Math.PI/180; return `[${c(Math.cos(r))}  ${c(-Math.sin(r))}  0]\n[${c(Math.sin(r))}  ${c(Math.cos(r))}  0]\n[0       0      1]`; },
+    scale: (sx, sy) => `[${sx}  0   0]\n[0   ${sy}  0]\n[0   0   1]`,
+  };
+  function c(v) { return v.toFixed(2).padStart(5); }
+  
+  if (mode === 'translate') {
+    const tx = document.getElementById('t2d_tx')?.value || 0;
+    const ty = document.getElementById('t2d_ty')?.value || 0;
+    el.innerHTML = `<div style="white-space:pre;color:var(--accent);">${matrices.translate(tx, ty)}</div>`;
+  } else if (mode === 'rotate') {
+    const a = document.getElementById('t2d_angle')?.value || 0;
+    el.innerHTML = `<div style="white-space:pre;color:var(--accent);">${matrices.rotate(parseFloat(a))}</div><div style="color:var(--muted);font-size:0.75rem;margin-top:0.5rem;">θ = ${a}°</div>`;
+  } else {
+    el.innerHTML = `<div style="color:var(--muted);font-size:0.85rem;">See generated code →</div>`;
+  }
+}
+
+function generate2DCode(mode) {
+  const codes = {
+    translate: () => {
+      const tx = document.getElementById('t2d_tx')?.value || 0;
+      const ty = document.getElementById('t2d_ty')?.value || 0;
+      return `// 2D Translation
+// VirtuLab CG Module | Tx=${tx}, Ty=${ty}
+#include <GL/glut.h>
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Original shape (dashed)
+    glColor3f(0.4, 0.4, 0.5);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(-70, -50);
+        glVertex2f( 70, -50);
+        glVertex2f( 70,  50);
+        glVertex2f(-70,  50);
+    glEnd();
+    
+    // Translation Matrix: [1 0 Tx; 0 1 Ty; 0 0 1]
+    glPushMatrix();
+    glTranslatef(${tx}, ${ty}, 0);
+    
+    glColor3f(0, 0.9, 1);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(-70, -50);
+        glVertex2f( 70, -50);
+        glVertex2f( 70,  50);
+        glVertex2f(-70,  50);
+    glEnd();
+    glPopMatrix();
+    
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(500, 400);
+    glutCreateWindow("2D Translation");
+    gluOrtho2D(-250, 250, -200, 200);
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}`;
+    },
+    rotate: () => {
+      const a = document.getElementById('t2d_angle')?.value || 0;
+      return `// 2D Rotation
+// VirtuLab CG Module | Angle=${a}°
+#include <GL/glut.h>
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glColor3f(0.4, 0.4, 0.5);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(-70, -50); glVertex2f(70, -50);
+        glVertex2f(70, 50);   glVertex2f(-70, 50);
+    glEnd();
+    
+    // Rotation Matrix: [cosθ -sinθ; sinθ cosθ]
+    glPushMatrix();
+    glRotatef(${a}, 0, 0, 1); // Rotate ${a}° around Z-axis
+    
+    glColor3f(0, 0.9, 1);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(-70, -50); glVertex2f(70, -50);
+        glVertex2f(70, 50);   glVertex2f(-70, 50);
+    glEnd();
+    glPopMatrix();
+    
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(500, 400);
+    glutCreateWindow("2D Rotation");
+    gluOrtho2D(-250, 250, -200, 200);
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}`;
+    },
+  };
+  const fn = codes[mode] || codes['translate'];
+  document.getElementById('t2dCode').innerHTML = highlightCpp(fn());
+}
+
+// ════════════════════════════════════════
+//  3D TRANSFORMS
+// ════════════════════════════════════════
+function draw3D() {
+  const canvas = document.getElementById('canvas3d');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rx = parseFloat(document.getElementById('rx').value) * Math.PI / 180;
+  const ry = parseFloat(document.getElementById('ry').value) * Math.PI / 180;
+  const scale = parseFloat(document.getElementById('rs').value);
+  const proj = document.getElementById('projType').value;
+
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+
+  // Cube vertices
+  const verts = [
+    [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+    [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]
+  ];
+
+  // Rotation matrices
+  const rotX = v => [v[0], v[1]*Math.cos(rx)-v[2]*Math.sin(rx), v[1]*Math.sin(rx)+v[2]*Math.cos(rx)];
+  const rotY = v => [v[0]*Math.cos(ry)+v[2]*Math.sin(ry), v[1], -v[0]*Math.sin(ry)+v[2]*Math.cos(ry)];
+
+  const projected = verts.map(v => {
+    let p = rotX(v);
+    p = rotY(p);
+    let px, py;
+    if (proj === 'ortho') {
+      px = p[0] * scale + canvas.width/2;
+      py = -p[1] * scale + canvas.height/2;
+    } else {
+      const d = 4;
+      const z = p[2] + d;
+      px = (p[0] / z) * scale * 2 + canvas.width/2;
+      py = -(p[1] / z) * scale * 2 + canvas.height/2;
+    }
+    return [px, py, p[2]];
+  });
+
+  const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+
+  edges.forEach(([a, b]) => {
+    const za = projected[a][2], zb = projected[b][2];
+    const alpha = Math.min(1, Math.max(0.3, (za + zb + 2) / 4));
+    ctx.strokeStyle = `rgba(0,229,255,${alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(projected[a][0], projected[a][1]);
+    ctx.lineTo(projected[b][0], projected[b][1]);
+    ctx.stroke();
+  });
+
+  projected.forEach(([x, y]) => {
+    ctx.fillStyle = 'var(--accent)';
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+  });
+
+  const rxD = document.getElementById('rx').value;
+  const ryD = document.getElementById('ry').value;
+  const sc = document.getElementById('rs').value;
+  const code = `// 3D Rotation (OpenGL)
+// VirtuLab CG Module | Rx=${rxD}° Ry=${ryD}° Scale=${sc}
+#include <GL/glut.h>
+#include <cmath>
+
+float rotX = ${rxD}, rotY = ${ryD};
+
+// Rotation matrix X-axis
+void rotateX(float v[3], float angle) {
+    float r = angle * M_PI / 180.0f;
+    float y = v[1]*cos(r) - v[2]*sin(r);
+    float z = v[1]*sin(r) + v[2]*cos(r);
+    v[1] = y; v[2] = z;
+}
+
+// Rotation matrix Y-axis
+void rotateY(float v[3], float angle) {
+    float r = angle * M_PI / 180.0f;
+    float x =  v[0]*cos(r) + v[2]*sin(r);
+    float z = -v[0]*sin(r) + v[2]*cos(r);
+    v[0] = x; v[2] = z;
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+    
+    // Apply ${proj === 'persp' ? 'Perspective' : 'Orthographic'} projection
+    glRotatef(rotX, 1, 0, 0);
+    glRotatef(rotY, 0, 1, 0);
+    glScalef(${(sc/80).toFixed(2)}, ${(sc/80).toFixed(2)}, ${(sc/80).toFixed(2)});
+    
+    glColor3f(0.0f, 0.9f, 1.0f);
+    glutWireCube(2.0);
+    
+    glutSwapBuffers();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitWindowSize(500, 400);
+    glutCreateWindow("3D Cube — ${proj}");
+    glEnable(GL_DEPTH_TEST);
+    ${proj === 'persp' ? 'gluPerspective(45, 1.25, 0.1, 100);\nglTranslatef(0, 0, -5);' : 'gluOrtho2D(-3, 3, -3, 3);'}
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}`;
+  document.getElementById('code3d').innerHTML = highlightCpp(code);
+}
+
+// ════════════════════════════════════════
+//  COHEN-SUTHERLAND CLIPPING
+// ════════════════════════════════════════
+const LINES = [
+  {x1:20,y1:20,x2:390,y2:260},{x1:50,y1:130,x2:380,y2:50},
+  {x1:10,y1:260,x2:250,y2:10},{x1:180,y1:10,x2:380,y2:270}
+];
+
+function computeCode(x, y, xmin, ymin, xmax, ymax) {
+  let c = 0;
+  if (x < xmin) c |= 1;
+  if (x > xmax) c |= 2;
+  if (y < ymin) c |= 4;
+  if (y > ymax) c |= 8;
+  return c;
+}
+
+function cohenSutherland(x1, y1, x2, y2, xmin, ymin, xmax, ymax) {
+  let c1 = computeCode(x1,y1,xmin,ymin,xmax,ymax);
+  let c2 = computeCode(x2,y2,xmin,ymin,xmax,ymax);
+  while (true) {
+    if (!(c1|c2)) return {x1,y1,x2,y2,accept:true};
+    if (c1&c2) return {accept:false};
+    const c = c1 ? c1 : c2;
+    let x, y;
+    if (c&8) { x = x1+(x2-x1)*(ymax-y1)/(y2-y1); y = ymax; }
+    else if (c&4) { x = x1+(x2-x1)*(ymin-y1)/(y2-y1); y = ymin; }
+    else if (c&2) { y = y1+(y2-y1)*(xmax-x1)/(x2-x1); x = xmax; }
+    else { y = y1+(y2-y1)*(xmin-x1)/(x2-x1); x = xmin; }
+    if (c === c1) { x1=x; y1=y; c1=computeCode(x1,y1,xmin,ymin,xmax,ymax); }
+    else { x2=x; y2=y; c2=computeCode(x2,y2,xmin,ymin,xmax,ymax); }
+  }
+}
+
+function drawClipping() {
+  const canvas = document.getElementById('clipCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const xmin = parseInt(document.getElementById('cxmin').value);
+  const xmax = parseInt(document.getElementById('cxmax').value);
+  const ymin = parseInt(document.getElementById('cymin').value);
+  const ymax = parseInt(document.getElementById('cymax').value);
+
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+
+  // Clipping window
+  ctx.strokeStyle = 'var(--warn)'; ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.strokeRect(xmin, ymin, xmax-xmin, ymax-ymin);
+  ctx.fillStyle = 'rgba(245,158,11,0.05)';
+  ctx.fillRect(xmin, ymin, xmax-xmin, ymax-ymin);
+
+  let results = [];
+  LINES.forEach(l => {
+    // Draw original (dimmed)
+    ctx.strokeStyle = 'rgba(100,116,139,0.3)'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const clipped = cohenSutherland(l.x1, l.y1, l.x2, l.y2, xmin, ymin, xmax, ymax);
+    if (clipped.accept) {
+      ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(clipped.x1, clipped.y1); ctx.lineTo(clipped.x2, clipped.y2); ctx.stroke();
+      results.push('✓ Accepted');
+    } else {
+      results.push('✗ Rejected');
+    }
+  });
+
+  document.getElementById('clipResult').textContent = 'Lines: ' + results.join(' | ');
+
+  const code = `// Cohen-Sutherland Line Clipping
+// VirtuLab CG Module | Window: (${xmin},${ymin})-(${xmax},${ymax})
+
+#include <graphics.h>
+#define LEFT 1
+#define RIGHT 2
+#define BOTTOM 4
+#define TOP 8
+
+int computeCode(float x, float y) {
+    int code = 0;
+    if (x < ${xmin}) code |= LEFT;
+    if (x > ${xmax}) code |= RIGHT;
+    if (y < ${ymin}) code |= BOTTOM;
+    if (y > ${ymax}) code |= TOP;
+    return code;
+}
+
+void cohenSutherland(float x1,float y1,float x2,float y2) {
+    int c1 = computeCode(x1,y1);
+    int c2 = computeCode(x2,y2);
+    
+    while (true) {
+        if (!(c1|c2)) {
+            // Completely inside - accept
+            line(x1,y1,x2,y2);
+            return;
+        }
+        if (c1&c2) return; // Completely outside
+        
+        int c = c1 ? c1 : c2;
+        float x, y;
+        
+        if (c & TOP)         { x = x1+(x2-x1)*(${ymax}-y1)/(y2-y1); y=${ymax}; }
+        else if (c & BOTTOM) { x = x1+(x2-x1)*(${ymin}-y1)/(y2-y1); y=${ymin}; }
+        else if (c & RIGHT)  { y = y1+(y2-y1)*(${xmax}-x1)/(x2-x1); x=${xmax}; }
+        else                 { y = y1+(y2-y1)*(${xmin}-x1)/(x2-x1); x=${xmin}; }
+        
+        if (c == c1) { x1=x; y1=y; c1=computeCode(x1,y1); }
+        else         { x2=x; y2=y; c2=computeCode(x2,y2); }
+    }
+}
+
+int main() {
+    int gd=DETECT, gm;
+    initgraph(&gd,&gm,"");
+    rectangle(${xmin},${ymin},${xmax},${ymax});
+    cohenSutherland(20,20,390,260);
+    getch(); closegraph(); return 0;
+}`;
+  document.getElementById('clipCode').innerHTML = highlightCpp(code);
+}
+
+// ════════════════════════════════════════
+//  BEZIER CURVES
+// ════════════════════════════════════════
+let bezierPts = [{x:60,y:240},{x:120,y:60},{x:280,y:60},{x:360,y:240}];
+let dragIdx = -1;
+
+function initBezier() {
+  const canvas = document.getElementById('bezierCanvas');
+  if (!canvas) return;
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); bezierMM({clientX: e.touches[0].clientX, clientY: e.touches[0].clientY}); });
+}
+
+function bezierMD(e) {
+  const canvas = document.getElementById('bezierCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  dragIdx = bezierPts.findIndex(p => Math.hypot(p.x - mx, p.y - my) < 16);
+}
+
+function bezierMM(e) {
+  if (dragIdx < 0) return;
+  const canvas = document.getElementById('bezierCanvas');
+  const rect = canvas.getBoundingClientRect();
+  bezierPts[dragIdx].x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  bezierPts[dragIdx].y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  drawBezier();
+  updateBezierCode();
+}
+
+function bezierMU() { dragIdx = -1; }
+
+function drawBezier() {
+  const canvas = document.getElementById('bezierCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#050709'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawGrid(ctx, canvas.width, canvas.height);
+
+  // Control polygon
+  ctx.strokeStyle = 'rgba(100,116,139,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+  ctx.beginPath();
+  bezierPts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Bezier curve
+  ctx.strokeStyle = 'var(--accent2)'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(bezierPts[0].x, bezierPts[0].y);
+  ctx.bezierCurveTo(
+    bezierPts[1].x, bezierPts[1].y,
+    bezierPts[2].x, bezierPts[2].y,
+    bezierPts[3].x, bezierPts[3].y
+  );
+  ctx.stroke();
+
+  // Points
+  const ptColors = ['var(--accent3)', 'var(--warn)', 'var(--warn)', 'var(--accent3)'];
+  bezierPts.forEach((p, i) => {
+    ctx.fillStyle = ptColors[i]; ctx.strokeStyle = '#050709'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0a0c10';
+    ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText('P'+i, p.x, p.y+3);
+  });
+}
+
+function updateBezierCode() {
+  const p = bezierPts;
+  const code = `// Cubic Bezier Curve (OpenGL)
+// VirtuLab CG Module
+// Control Points:
+//   P0=(${Math.round(p[0].x)},${Math.round(p[0].y)})  P1=(${Math.round(p[1].x)},${Math.round(p[1].y)})
+//   P2=(${Math.round(p[2].x)},${Math.round(p[2].y)})  P3=(${Math.round(p[3].x)},${Math.round(p[3].y)})
+
+#include <GL/glut.h>
+#include <cmath>
+
+// Bernstein basis polynomials
+float B0(float t) { return (1-t)*(1-t)*(1-t); }
+float B1(float t) { return 3*t*(1-t)*(1-t); }
+float B2(float t) { return 3*t*t*(1-t); }
+float B3(float t) { return t*t*t; }
+
+// Control points
+float px[4] = {${p.map(pt => Math.round(pt.x)).join(', ')}};
+float py[4] = {${p.map(pt => Math.round(pt.y)).join(', ')}};
+
+void drawBezier() {
+    glColor3f(0.49f, 0.23f, 0.93f); // Purple
+    glBegin(GL_LINE_STRIP);
+    
+    int N = 200; // Number of segments
+    for (int i = 0; i <= N; i++) {
+        float t = (float)i / N;
+        
+        // Cubic Bezier formula:
+        // B(t) = B0(t)*P0 + B1(t)*P1 + B2(t)*P2 + B3(t)*P3
+        float x = B0(t)*px[0] + B1(t)*px[1] + B2(t)*px[2] + B3(t)*px[3];
+        float y = B0(t)*py[0] + B1(t)*py[1] + B2(t)*py[2] + B3(t)*py[3];
+        
+        glVertex2f(x, y);
+    }
+    glEnd();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawBezier();
+    
+    // Draw control polygon
+    glColor3f(0.3f, 0.3f, 0.3f);
+    glEnable(GL_LINE_STIPPLE);
+    glLineStipple(2, 0xAAAA);
+    glBegin(GL_LINE_STRIP);
+    for (int i = 0; i < 4; i++) glVertex2f(px[i], py[i]);
+    glEnd();
+    glDisable(GL_LINE_STIPPLE);
+    
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(500, 400);
+    glutCreateWindow("Bezier Curve");
+    gluOrtho2D(0, 420, 300, 0);
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}`;
+  document.getElementById('bezierCode').innerHTML = highlightCpp(code);
+}
+
+// ════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════
+function drawGrid(ctx, w, h) {
+  ctx.strokeStyle = 'rgba(0,229,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+}
+
+function drawAxes(ctx, w, h) {
+  ctx.strokeStyle = 'rgba(100,116,139,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.stroke();
+}
+
+function highlightCpp(code) {
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(\/\/[^\n]*)/g, '<span style="color:#4b5563">$1</span>')
+    .replace(/\b(int|float|void|return|while|for|if|else|true|false|include|define|using|namespace)\b/g, '<span style="color:#a78bfa">$1</span>')
+    .replace(/\b(std|cout|endl|abs|round|max|min|cos|sin|sqrt|pow|gluOrtho2D|glVertex2f|glBegin|glEnd|glFlush|GL_LINE_STRIP|GL_LINE_LOOP|glutMainLoop|glutDisplayFunc|glutInit|glutInitWindowSize|glutCreateWindow|glClear|GL_COLOR_BUFFER_BIT|putpixel|line|rectangle|initgraph|closegraph|getch|glColor3f|glPushMatrix|glPopMatrix|glTranslatef|glRotatef|glScalef|glutWireCube|glLoadIdentity|glEnable|GL_DEPTH_TEST|glutSwapBuffers)\b/g, '<span style="color:#00e5ff">$1</span>')
+    .replace(/\b(\d+\.?\d*f?)\b/g, '<span style="color:#f59e0b">$1</span>');
+}
+
+function copyCG(id) {
+  const el = document.getElementById(id + 'CppCode') || document.getElementById(id + 'Code') || document.getElementById('code' + id);
+  if (el) navigator.clipboard.writeText(el.textContent).then(() => { alert('Copied!'); });
+}
+
+function copyModal() {
+  navigator.clipboard.writeText(document.getElementById('modalCode').textContent).then(() => alert('Copied!'));
+}
+
+function downloadCGCode(id) {
+  const codes = {
+    dda: () => document.getElementById('ddaCppCode')?.textContent,
+    br: () => document.getElementById('brCppCode')?.textContent,
+    mc: () => document.getElementById('mcCppCode')?.textContent,
+    t2d: () => document.getElementById('t2dCode')?.textContent,
+    '3d': () => document.getElementById('code3d')?.textContent,
+    clip: () => document.getElementById('clipCode')?.textContent,
+    bezier: () => document.getElementById('bezierCode')?.textContent,
+  };
+  const fn = codes[id];
+  if (!fn) return;
+  const content = fn();
+  if (!content) return;
+  const blob = new Blob([content], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `virtulab_${id}.cpp`;
+  a.click();
+}
+
+function downloadGateCode() {
+  const content = generateGateCpp(currentGate);
+  const blob = new Blob([content], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gate_${currentGate}.cpp`;
+  a.click();
+}
+
+function generateGateCpp(gate) {
+  return `// ${gate} Gate Truth Table Generator
+// VirtuLab — Digital Electronics Module
+#include <iostream>
+using namespace std;
+
+int ${gate}Gate(int a${gate!=='NOT'&&gate!=='BUFFER'?', int b':''}) {
+    ${gate==='AND'?'return a & b;':gate==='OR'?'return a | b;':gate==='NOT'||gate==='BUFFER'?'return a'+(gate==='NOT'?'^1':'')+';':gate==='NAND'?'return !(a & b);':gate==='NOR'?'return !(a | b);':gate==='XOR'?'return a ^ b;':'return !(a ^ b);'}
+}
+
+int main() {
+    cout << "${gate} Gate Truth Table" << endl;
+    ${gate==='NOT'||gate==='BUFFER'?`
+    cout << "A | OUT" << endl;
+    for (int a = 0; a <= 1; a++)
+        cout << a << " | " << ${gate}Gate(a) << endl;`:`
+    cout << "A | B | OUT" << endl;
+    for (int a = 0; a <= 1; a++)
+        for (int b = 0; b <= 1; b++)
+            cout << a << " | " << b << " | " << ${gate}Gate(a, b) << endl;`}
+    return 0;
+}`;
+}
+
+function exportTruth() { alert('Truth table export as PDF/CSV (feature uses jsPDF in production).'); }
+
+function showCppCode(type) {
+  const codes = {
+    halfAdder: `// Half Adder Implementation
+// VirtuLab — DELD Module
+#include <iostream>
+using namespace std;
+
+void halfAdder(int a, int b, int &sum, int &carry) {
+    sum   = a ^ b;  // XOR gate
+    carry = a & b;  // AND gate
+}
+
+int main() {
+    int sum, carry;
+    cout << "Half Adder Truth Table" << endl;
+    cout << "A | B | SUM | CARRY" << endl;
+    for (int a = 0; a <= 1; a++)
+        for (int b = 0; b <= 1; b++) {
+            halfAdder(a, b, sum, carry);
+            cout << a << " | " << b << " |  " << sum << "  |   " << carry << endl;
+        }
+    return 0;
+}`,
+    srFF: `// SR Flip-Flop Simulation
+// VirtuLab — DELD Module
+#include <iostream>
+using namespace std;
+
+int Q = 0, Qn = 1; // Initial state
+
+void SR_FF(int S, int R) {
+    if (S == 0 && R == 0) {
+        // No change
+        cout << "No Change: Q=" << Q << endl;
+    } else if (S == 0 && R == 1) {
+        Q = 0; Qn = 1;
+        cout << "RESET: Q=" << Q << endl;
+    } else if (S == 1 && R == 0) {
+        Q = 1; Qn = 0;
+        cout << "SET: Q=" << Q << endl;
+    } else {
+        cout << "INVALID STATE (S=R=1)!" << endl;
+    }
+}
+
+int main() {
+    cout << "SR Flip-Flop" << endl;
+    SR_FF(0, 0); // Hold
+    SR_FF(1, 0); // Set
+    SR_FF(0, 1); // Reset
+    SR_FF(1, 1); // Invalid
+    return 0;
+}`,
+    jkFF: `// JK Flip-Flop Simulation
+// VirtuLab — DELD Module
+#include <iostream>
+using namespace std;
+
+int Q = 0;
+
+void JK_FF(int J, int K) {
+    if      (J==0 && K==0) { /* No change */ }
+    else if (J==0 && K==1) { Q = 0; }
+    else if (J==1 && K==0) { Q = 1; }
+    else                   { Q = Q ^ 1; } // Toggle
+    cout << "J=" << J << " K=" << K << " → Q=" << Q << endl;
+}
+
+int main() {
+    cout << "JK Flip-Flop" << endl;
+    JK_FF(0,0); JK_FF(0,1);
+    JK_FF(1,0); JK_FF(1,1);
+    return 0;
+}`,
+  };
+
+  const titleMap = { halfAdder: 'Half Adder', srFF: 'SR Flip-Flop', jkFF: 'JK Flip-Flop' };
+  document.getElementById('modalTitle').textContent = titleMap[type] || type;
+  document.getElementById('modalCode').innerHTML = highlightCpp(codes[type] || '// Code not available');
+  activeModal = type;
+  document.getElementById('cppModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('cppModal').style.display = 'none'; }
+function downloadModal() {
+  const content = document.getElementById('modalCode').textContent;
+  const blob = new Blob([content], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `virtulab_${activeModal}.cpp`; a.click();
+}
+
+// Close modal on backdrop click
+document.getElementById('cppModal').addEventListener('click', e => { if (e.target === document.getElementById('cppModal')) closeModal(); });
+
+// Init on load
+window.onload = () => {
+  // Pre-fill demo credentials
+  document.getElementById('loginId').value = 'rahul@college.edu';
+  document.getElementById('loginPass').value = 'password';
+};
+</script>
+</body>
+</html>

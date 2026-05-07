@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to VirtuLab – Digital Electronics & AR Virtual Laboratory">
+    <title>VirtuLab – Login</title>
+    <link rel="stylesheet" href="/frontend/static/css/auth.css">
+    <script src="/frontend/static/js/config.js"></script>
+    <script src="/frontend/static/js/api.js"></script>
+    <script src="/frontend/static/js/auth.js"></script>
+</head>
+<body class="theme-dark">
+
+<!-- Animated Background -->
+<div class="auth-bg">
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+    <div class="auth-bg-orb"></div>
+</div>
+
+<!-- Theme Toggle -->
+<button class="auth-theme-toggle" id="authThemeToggle" aria-label="Toggle theme">🌙</button>
+
+<!-- Success Overlay -->
+<div class="auth-success-overlay" id="authSuccess">
+    <div class="auth-success-icon">✓</div>
+    <div class="auth-success-text">Signed in successfully!</div>
+</div>
+
+<!-- Auth Card -->
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-logo">◈ VIRTULAB</div>
+        <div class="auth-title">Welcome Back</div>
+        <div class="auth-sub">Sign in to your laboratory account</div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="student@college.edu" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+                <label for="loginPass">Password</label>
+                <div class="pass-wrapper">
+                    <input type="password" id="loginPass" placeholder="••••••••" required minlength="8" autocomplete="current-password" />
+                    <button type="button" class="pass-toggle" aria-label="Show password">👁️</button>
+                </div>
+            </div>
+            <button class="auth-btn" type="submit" id="loginBtn">
+                <span class="btn-text">Sign In →</span>
+                <span class="spinner"></span>
+            </button>
+            <div id="loginError" class="auth-msg"></div>
+            <div class="auth-switch">New here? <a href="/frontend/templates/signup.html">Create an account</a></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Redirect if already logged in
+    if (VirtuLabAPI.getCurrentUser()) {
+        window.location.href = '/dashboard';
+    }
+
+    // Init auth helpers
+    VirtuLabAuth.initTheme();
+    VirtuLabAuth.initPasswordToggles();
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const errEl = document.getElementById('loginError');
+        errEl.textContent = '';
+        errEl.className = 'auth-msg';
+        VirtuLabAuth.setLoading('loginBtn', true);
+
+        try {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPass').value;
+            await VirtuLabAPI.login(email, password);
+            VirtuLabAuth.showSuccess('Signed in successfully!', '/dashboard');
+        } catch (err) {
+            errEl.textContent = err.message;
+            errEl.className = 'auth-msg error';
+        } finally {
+            VirtuLabAuth.setLoading('loginBtn', false);
+        }
+    }
+</script>
+
+</body>
+</html>

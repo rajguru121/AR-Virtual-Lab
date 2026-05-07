@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XOR Gate — Pure XOR (no AND/OR)</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#000;font-family:'Courier New',monospace;color:#ddd;overflow:hidden;}
+    #cc{position:fixed;top:0;left:0;width:100%;height:100%;}
+    #panel{
+      position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+      background:rgba(6,6,14,0.95);border:1px solid rgba(255,255,255,0.13);
+      border-radius:12px;padding:16px 32px;display:flex;align-items:center;
+      gap:22px;backdrop-filter:blur(14px);z-index:100;flex-wrap:wrap;justify-content:center;
+      box-shadow:0 4px 32px rgba(0,0,0,0.85);
+    }
+    .ig{display:flex;align-items:center;gap:12px;}
+    .il{font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#aaa;font-weight:bold;}
+    .tb{width:60px;height:30px;border-radius:15px;border:none;cursor:pointer;position:relative;transition:background 0.3s;outline:none;}
+    .tb.off{background:rgba(50,50,70,0.7);}
+    .tb.on {background:rgba(255,200,0,0.35);box-shadow:0 0 10px rgba(255,200,0,0.4);}
+    .tb::after{content:'';position:absolute;top:4px;width:22px;height:22px;border-radius:50%;transition:all 0.3s;}
+    .tb.off::after{left:4px;background:#2a2a44;}
+    .tb.on::after {left:34px;background:#ffcc00;box-shadow:0 0 10px #ffcc00;}
+    .bd{font-size:16px;font-weight:bold;min-width:16px;text-align:center;}
+    .bd.on {color:#ffcc00;text-shadow:0 0 8px #ffcc00;}
+    .bd.off{color:#4a4a64;}
+    .dv{width:1px;height:28px;background:rgba(255,255,255,0.1);}
+    #sp{
+      position:fixed;top:14px;right:14px;
+      background:rgba(6,6,14,0.95);border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;padding:16px 22px;font-size:13px;line-height:2.4;
+      letter-spacing:1px;backdrop-filter:blur(12px);min-width:240px;z-index:100;
+    }
+    #sp h3{font-size:12px;letter-spacing:3px;color:#666;margin-bottom:10px;text-transform:uppercase;border-bottom:1px solid #222;padding-bottom:4px;}
+    .sr{display:flex;justify-content:space-between;align-items:center;gap:22px;}
+    .sk{color:#888;}
+    .sv{font-weight:bold;font-size:14px;}
+    .sv.hi, .sv.hi2 {color:#ffcc00;text-shadow:0 0 7px #ffcc00;}
+    .sv.lo {color:#4a4a64;}
+    .sv.nt {color:#aaaaaa;}
+    #ge{
+      position:fixed;top:14px;left:14px;
+      background:rgba(6,6,14,0.95);border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;padding:16px 22px;font-size:13px;line-height:1.9;
+      letter-spacing:0.5px;backdrop-filter:blur(12px);z-index:100;max-width:320px;
+    }
+    #ge h3{font-size:12px;letter-spacing:3px;color:#666;margin-bottom:12px;text-transform:uppercase;border-bottom:1px solid #222;padding-bottom:4px;}
+    .gr{display:flex;align-items:flex-start;gap:12px;margin-bottom:8px;}
+    .gd{width:14px;height:14px;border-radius:2px;flex-shrink:0;margin-top:4px;}
+    .gi{color:#aaa;font-size:12px;line-height:1.6;}
+    .gv{font-weight:bold;letter-spacing:0;font-size:14px;}
+    .gv.hi, .gv.hi2 {color:#ffcc00;}
+    .gv.lo {color:#4a4a64;}
+    hr.sep{border:none;border-top:1px solid #222;margin:10px 0;}
+    .formula{font-size:12px;color:#888;line-height:2.0;}
+    #tt{
+      position:fixed;bottom:100px;right:14px;
+      background:rgba(6,6,14,0.95);border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px;padding:16px 20px;font-size:13px;
+      letter-spacing:1px;backdrop-filter:blur(12px);z-index:100;
+    }
+    #tt h3{font-size:11px;letter-spacing:3px;color:#888;margin-bottom:12px;text-transform:uppercase;text-align:center;}
+    table{border-collapse:collapse;width:100%;}
+    th{color:#888;font-size:12px;letter-spacing:1px;padding:6px 14px;text-align:center;border-bottom:1px solid #222;}
+    td{padding:8px 14px;text-align:center;border-radius:4px;color:#ccc;font-weight:bold;}
+    .tr-active td{background:rgba(255,200,0,0.15);color:#ffcc00;box-shadow:inset 0 0 8px rgba(255,200,0,0.2);}
+    td.dim{color:#666;}
+    #lm{
+      position:fixed;top:20px;left:50%;transform:translateX(-50%);
+      background:rgba(6,6,14,0.96);border:1px solid rgba(255,200,0,0.4);
+      border-radius:8px;padding:14px 28px;font-size:14px;letter-spacing:2px;font-weight:bold;
+      color:#ffcc00;text-shadow:0 0 10px rgba(255,200,0,0.5);
+      pointer-events:none;opacity:0;transition:opacity 0.4s;z-index:200;white-space:nowrap;
+      box-shadow:0 4px 15px rgba(255,200,0,0.15);
+    }
+  </style>
+</head>
+<body>
+<div id="cc"></div>
+<div id="ge">
+  <h3>★ Pure XOR Gate ★</h3>
+  <div class="gr">
+    <div class="gd" style="background:#1a1a00;border:1px solid #ffcc00;"></div>
+    <div class="gi">G0: XOR(A,B) = Y<br>Y = <span class="gv lo" id="g0v">0</span></div>
+  </div>
+  <hr class="sep">
+  <div class="formula">
+    Y = A ⊕ B <br>
+    <span style="color:#ffcc00">✓ Y=1 when A ≠ B (A XOR B)</span><br>
+    <span style="color:#888">✓ No AND/OR sub‑gates — true XOR</span>
+  </div>
+</div>
+<div id="sp">
+  <h3>XOR Gate State</h3>
+  <div class="sr"><span class="sk">A</span>  <span class="sv lo" id="sv-a">0</span></div>
+  <div class="sr"><span class="sk">B</span>  <span class="sv lo" id="sv-b">0</span></div>
+  <div class="sr"><span class="sk">Y (XOR)</span><span class="sv lo" id="sv-y">0</span></div>
+  <div class="sr"><span class="sk">EXPRESSION</span><span class="sv nt" id="sv-e">A⊕B</span></div>
+</div>
+<div id="tt">
+  <h3>Truth Table</h3>
+  <table>
+    <tr><th>A</th><th>B</th><th>Y=XOR</th></tr>
+    <tr id="row-00"><td class="dim">0</td><td class="dim">0</td><td class="dim">0</td></tr>
+    <tr id="row-01"><td class="dim">0</td><td class="dim">1</td><td class="dim">1</td></tr>
+    <tr id="row-10"><td class="dim">1</td><td class="dim">0</td><td class="dim">1</td></tr>
+    <tr id="row-11"><td class="dim">1</td><td class="dim">1</td><td class="dim">0</td></tr>
+  </table>
+</div>
+<div id="lm"></div>
+<div id="panel">
+  <div class="ig"><span class="il">A</span><button class="tb off" id="btn-a" onclick="toggleA()"></button><span class="bd off" id="da">0</span></div>
+  <div class="dv"></div>
+  <div class="ig"><span class="il">B</span><button class="tb off" id="btn-b" onclick="toggleB()"></button><span class="bd off" id="db">0</span></div>
+</div>
+<script type="importmap">
+{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FontLoader }    from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry }  from 'three/addons/geometries/TextGeometry.js';
+
+let A=0, B=0;
+function getY() { return A ^ B; }
+
+const container = document.getElementById('cc');
+const renderer  = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.5;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020308);
+scene.fog = new THREE.FogExp2(0x020308, 0.013);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 80);
+camera.position.set(0, 7.5, 12);
+camera.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.minDistance = 5;      controls.maxDistance = 22;
+controls.target.set(0, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 2.2));
+const sun = new THREE.DirectionalLight(0xffffff, 6.0);
+sun.position.set(4, 10, 6); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+scene.add(sun);
+const fl = new THREE.DirectionalLight(0xffdd88, 2.8);
+fl.position.set(-6, 4, -3); scene.add(fl);
+const fb = new THREE.DirectionalLight(0xffeedd, 1.6);
+fb.position.set(0, -3, 8); scene.add(fb);
+
+const boardGlow = new THREE.PointLight(0x332200, 3.0, 16);
+boardGlow.position.set(0, -0.4, 0); scene.add(boardGlow);
+
+const aLight = new THREE.PointLight(0xffcc00, 0, 6);
+aLight.position.set(-5.5, 1.5, 1.3); scene.add(aLight);
+const bLight = new THREE.PointLight(0xffcc00, 0, 6);
+bLight.position.set(-5.5, 1.5, -1.3); scene.add(bLight);
+const yLight = new THREE.PointLight(0xffcc00, 0, 6);
+yLight.position.set(4.8, 1.5, 0); scene.add(yLight);
+
+const boardMesh = new THREE.Mesh(new THREE.BoxGeometry(14, 0.13, 8), new THREE.MeshStandardMaterial({ color:0x050e08, roughness:0.65, metalness:0.08 }));
+boardMesh.position.y = -1.2; boardMesh.receiveShadow = true; scene.add(boardMesh);
+
+const gridMesh = new THREE.Mesh(new THREE.PlaneGeometry(13.6, 7.6, 13, 7), new THREE.MeshBasicMaterial({ color:0x1a1a00, wireframe:true, transparent:true, opacity:0.30 }));
+gridMesh.rotation.x = -Math.PI/2; gridMesh.position.y = -1.13; scene.add(gridMesh);
+
+const GY = 0.22, WY = 0.22;
+const GW = 1.90, GH = 0.65, GD = 1.70;
+const gatePos = new THREE.Vector3(0, GY, 0);
+
+function makeXorGate(pos) {
+  const group = new THREE.Group();
+  const bodyGeo = new THREE.BoxGeometry(GW, GH, GD);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x332200, roughness: 0.28, metalness: 0.30, emissive: 0x1a1100, emissiveIntensity: 0.25 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.castShadow = body.receiveShadow = true; group.add(body);
+
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0xffcc00 });
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), edgeMat));
+
+  const curveMat = new THREE.LineBasicMaterial({ color: 0xffcc00 });
+  const points1 = [];
+  for (let i = -0.3; i <= 0.3; i+=0.1) points1.push(new THREE.Vector3(i*1.0, 0.2, GW/2+0.15));
+  const lineGeo1 = new THREE.BufferGeometry().setFromPoints(points1);
+  group.add(new THREE.Line(lineGeo1, curveMat));
+  
+  const points2 = [];
+  for (let i = -0.2; i <= 0.2; i+=0.1) points2.push(new THREE.Vector3(i*0.8, 0.1, GW/2+0.18));
+  const lineGeo2 = new THREE.BufferGeometry().setFromPoints(points2);
+  group.add(new THREE.Line(lineGeo2, curveMat));
+
+  const plusMat = new THREE.MeshStandardMaterial({ color:0xffcc00, emissive:0xffcc00 });
+  const barH = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.05,0.05), plusMat);
+  barH.position.set(0, 0.1, GW/2+0.22); group.add(barH);
+  const barV = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.3,0.05), plusMat);
+  barV.position.set(0, 0.1, GW/2+0.22); group.add(barV);
+
+  group.position.copy(pos); scene.add(group); return { group, bodyMat };
+}
+const xorGate = makeXorGate(gatePos);
+
+const pinMat = new THREE.MeshStandardMaterial({ color:0xbbbbbb, roughness:0.12, metalness:0.97 });
+function addPin(x, z) {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.8,10), pinMat);
+  p.position.set(x,-0.85,z); p.castShadow=true; scene.add(p);
+  const f = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.06,0.06), pinMat);
+  f.position.set(x+(x<0?-0.22:0.22),-1.17,z); scene.add(f);
+}
+[-1.6,0,1.6].forEach(z=>{ addPin(-6.6,z); addPin(5.5,z); });
+
+function makeInd(x, z, hiCol) {
+  const mat = new THREE.MeshStandardMaterial({ color:0x222222, emissive:hiCol, emissiveIntensity:0.05, roughness:0.3 });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3,32,32), mat);
+  mesh.position.set(x, GY+0.65, z); mesh.castShadow=true; scene.add(mesh);
+  const light = new THREE.PointLight(hiCol, 0, 4); light.position.copy(mesh.position); scene.add(light);
+  return {mesh, mat, light, hiCol};
+}
+const X_IN_A = -5.8, X_IN_B = -5.8, X_OUT = 4.8;
+const Z_A = 1.3, Z_B = -1.3;
+const indY = makeInd(X_OUT, 0, 0xffcc00);
+
+const aMat = new THREE.MeshStandardMaterial({ color:0xffcc00, emissive:0xffcc00, emissiveIntensity:0.35, roughness:0.3 });
+const aSph = new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32), aMat);
+aSph.position.set(X_IN_A, GY+0.55, Z_A); scene.add(aSph);
+const bMat = new THREE.MeshStandardMaterial({ color:0xffcc00, emissive:0xffcc00, emissiveIntensity:0.35, roughness:0.3 });
+const bSph = new THREE.Mesh(new THREE.SphereGeometry(0.25,32,32), bMat);
+bSph.position.set(X_IN_B, GY+0.55, Z_B); scene.add(bSph);
+
+const wireDefs = [];
+const COL_LO_HEX = 0x332a00;
+const COL_HI_HEX = 0xffcc00;
+
+function addInstrumentedWire(pts, sourceFn) {
+  const path = new THREE.CatmullRomCurve3(pts.map(([x,y,z]) => new THREE.Vector3(x,y,z)), false, 'catmullrom', 0.05);
+  const geo = new THREE.TubeGeometry(path, 64, 0.08, 8, false);
+  const mat = new THREE.MeshStandardMaterial({ color: COL_LO_HEX, roughness: 0.4, metalness: 0.8 });
+  const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh);
+  wireDefs.push({ mat, sourceFn });
+}
+
+const gateLeft  = gatePos.x - GW/2;
+const gateRight = gatePos.x + GW/2;
+addInstrumentedWire([[X_IN_A, WY, Z_A], [-2.0, WY, Z_A], [-2.0, WY, gatePos.z + 0.4], [gateLeft, WY, gatePos.z + 0.4]], () => A);
+addInstrumentedWire([[X_IN_B, WY, Z_B], [-2.0, WY, Z_B], [-2.0, WY, gatePos.z - 0.4], [gateLeft, WY, gatePos.z - 0.4]], () => B);
+addInstrumentedWire([[gateRight, WY, gatePos.z], [X_OUT, WY, gatePos.z]], getY);
+
+function refreshWires() {
+  wireDefs.forEach(({mat, sourceFn}) => {
+    const isHigh = sourceFn();
+    mat.color.set(isHigh ? COL_HI_HEX : COL_LO_HEX);
+    mat.emissive.set(isHigh ? 0xaa8800 : 0x000000);
+    mat.emissiveIntensity = isHigh ? 2.5 : 0;
+  });
+}
+
+function refreshGateGlow() {
+  const Y = getY();
+  xorGate.bodyMat.emissiveIntensity = Y ? 1.0 : 0.12;
+  xorGate.bodyMat.emissive.set(Y ? 0x553300 : 0x1a1100);
+}
+
+function refreshIndicators() {
+  const Y = getY();
+  indY.mat.color.set(Y ? indY.hiCol : 0x222222);
+  indY.mat.emissive.set(Y ? indY.hiCol : 0x000000);
+  indY.mat.emissiveIntensity = Y ? 3.0 : 0.04;
+  indY.light.intensity = Y ? 4.0 : 0;
+  aMat.emissiveIntensity = A ? 2.0 : 0.3;
+  bMat.emissiveIntensity = B ? 2.0 : 0.3;
+  aMat.color.set(A ? 0xffcc00 : 0x665500);
+  bMat.color.set(B ? 0xffcc00 : 0x665500);
+  aLight.intensity = A ? 3.0 : 0;
+  bLight.intensity = B ? 3.0 : 0;
+  yLight.intensity = Y ? 4.0 : 0;
+}
+
+function refreshUI() {
+  const Y = getY();
+  const gvEl = document.getElementById('g0v');
+  gvEl.textContent = Y; gvEl.className = 'gv ' + (Y ? 'hi' : 'lo');
+  const sv = (id,val,cls) => { const el=document.getElementById(id); el.textContent=val; el.className='sv '+cls; };
+  sv('sv-a', A, A?'hi':'lo'); sv('sv-b', B, B?'hi':'lo'); sv('sv-y', Y, Y?'hi2':'lo');
+  const expr = document.getElementById('sv-e'); expr.textContent = Y ? '✓ HIGH' : '✗ LOW'; expr.className = 'sv '+(Y?'hi2':'nt');
+  const key = `${A}${B}`; ['00','01','10','11'].forEach(k=>{ document.getElementById('row-'+k).className = (k===key)?'tr-active':''; });
+  ['a','b'].forEach(nm=>{
+    const v = nm==='a'?A:B; const btn=document.getElementById('btn-'+nm); btn.className='tb '+(v?'on':'off');
+    const dd=document.getElementById('d'+nm); dd.textContent=v; dd.className='bd '+(v?'on':'off');
+  });
+}
+
+function refresh() {
+  refreshWires(); refreshGateGlow(); refreshIndicators(); refreshUI();
+  showMsg(getY() ? '✅ OUTPUT HIGH — A≠B (XOR)' : `⚡ OUTPUT LOW — A=${A}, B=${B}`);
+}
+
+window.toggleA = () => { A ^= 1; refresh(); };
+window.toggleB = () => { B ^= 1; refresh(); };
+
+let msgTO;
+function showMsg(text) {
+  const el=document.getElementById('lm'); el.textContent=text; el.style.opacity='1';
+  clearTimeout(msgTO); msgTO=setTimeout(()=>{ el.style.opacity='0'; }, 2200);
+}
+
+const fLoader = new FontLoader();
+fLoader.load('https://cdn.jsdelivr.net/npm/three@0.165.0/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+  function lbl(text, x, y, z, color=0xffffff, sz=0.32) {
+    const geo = new TextGeometry(text, {font, size:sz, depth:0.04, curveSegments:6}); geo.computeBoundingBox();
+    const w = geo.boundingBox.max.x - geo.boundingBox.min.x;
+    const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.85 });
+    const m = new THREE.Mesh(geo, mat); m.position.set(x-w/2, y, z); scene.add(m);
+  }
+  lbl('XOR', gatePos.x, GY+0.45, gatePos.z-0.15, 0xffffff, 0.40);
+  lbl('A',  X_IN_A,    GY+0.55, Z_A+0.1,  0xffffff, 0.35);
+  lbl('B',  X_IN_B,    GY+0.55, Z_B-0.15, 0xffffff, 0.35);
+  lbl('Y',  X_OUT,     GY+1.15, 0,        0xffffff, 0.38);
+  lbl('PURE XOR', 0, -1.06, 3.2, 0xdddddd, 0.18);
+});
+
+const pBuf = new Float32Array(600*3);
+for(let i=0;i<600;i++){ pBuf[i*3]=(Math.random()-0.5)*20; pBuf[i*3+1]=(Math.random()-0.5)*10; pBuf[i*3+2]=(Math.random()-0.5)*14; }
+const pGeo=new THREE.BufferGeometry(); pGeo.setAttribute('position',new THREE.BufferAttribute(pBuf,3));
+scene.add(new THREE.Points(pGeo,new THREE.PointsMaterial({ color:0x886622,size:0.025,transparent:true,opacity:0.35 })));
+
+const clk3 = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate); const t = clk3.getElapsedTime();
+  xorGate.group.position.y = GY+Math.sin(t*0.65)*0.018;
+  boardGlow.intensity = 2.6 + Math.sin(t*0.9)*0.7;
+  if (getY()) { const p = 2.8+Math.sin(t*5)*0.8; indY.mat.emissiveIntensity = p; indY.light.intensity = p; }
+  controls.update(); renderer.render(scene, camera);
+}
+window.addEventListener('resize', ()=>{ camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+refresh(); animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>T Flip-Flop — Gate Level 3D</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#000;font-family:'Courier New',monospace;color:#ddd;overflow:hidden;}
+    #cc{position:fixed;top:0;left:0;width:100%;height:100%;}
+
+    /* ── control bar ── */
+    #panel{
+      position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+      background:rgba(6,4,14,0.95);border:1px solid rgba(255,255,255,0.13);
+      border-radius:12px;padding:13px 28px;display:flex;align-items:center;
+      gap:18px;backdrop-filter:blur(14px);z-index:100;flex-wrap:wrap;justify-content:center;
+      box-shadow:0 4px 32px rgba(0,0,0,0.9);
+    }
+    .ig{display:flex;align-items:center;gap:9px;}
+    .il{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#777;}
+    .tb{width:50px;height:25px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background 0.3s;outline:none;}
+    .tb.off{background:rgba(50,40,70,0.7);}
+    .tb.on {background:rgba(255,120,30,0.35);box-shadow:0 0 10px rgba(255,120,30,0.45);}
+    .tb::after{content:'';position:absolute;top:3px;width:19px;height:19px;border-radius:50%;transition:all 0.3s;}
+    .tb.off::after{left:3px;background:#2a2035;}
+    .tb.on::after {left:28px;background:#ff8833;box-shadow:0 0 10px #ff8833;}
+    .bd{font-size:14px;font-weight:bold;min-width:14px;text-align:center;}
+    .bd.on {color:#ff8833;text-shadow:0 0 8px #ff8833;}
+    .bd.off{color:#2a2035;}
+    .ck{padding:7px 20px;border-radius:7px;border:1px solid rgba(255,195,0,0.45);
+        background:rgba(255,175,0,0.07);color:#ffcc33;
+        font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;
+        cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+    .ck:hover{background:rgba(255,175,0,0.22);box-shadow:0 0 16px rgba(255,175,0,0.35);}
+    .ck:active{transform:scale(0.95);}
+    .dv{width:1px;height:24px;background:rgba(255,255,255,0.1);}
+
+    /* ── state panel ── */
+    #sp{
+      position:fixed;top:14px;right:14px;
+      background:rgba(6,4,14,0.95);border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;padding:13px 18px;font-size:11px;line-height:2.2;
+      letter-spacing:1px;backdrop-filter:blur(12px);min-width:190px;z-index:100;
+    }
+    #sp h3{font-size:9px;letter-spacing:3px;color:#333;margin-bottom:6px;text-transform:uppercase;}
+    .sr{display:flex;justify-content:space-between;align-items:center;gap:22px;}
+    .sk{color:#444;}
+    .sv{font-weight:bold;}
+    .sv.hi {color:#ff8833;text-shadow:0 0 7px #ff8833;}
+    .sv.hi2{color:#00ff88;text-shadow:0 0 7px #00ff88;}
+    .sv.lo {color:#2a2035;}
+    .sv.nt {color:#ffcc33;}
+    .sv.tg {color:#ff44ff;text-shadow:0 0 9px #ff44ff;animation:pls 0.7s ease-in-out infinite;}
+    @keyframes pls{0%,100%{opacity:1;}50%{opacity:0.45;}}
+
+    /* ── gate legend ── */
+    #ge{
+      position:fixed;top:14px;left:14px;
+      background:rgba(6,4,14,0.95);border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px;padding:13px 18px;font-size:11px;line-height:1.9;
+      letter-spacing:0.5px;backdrop-filter:blur(12px);z-index:100;max-width:250px;
+    }
+    #ge h3{font-size:9px;letter-spacing:3px;color:#333;margin-bottom:9px;text-transform:uppercase;}
+    .gr{display:flex;align-items:flex-start;gap:9px;margin-bottom:6px;}
+    .gd{width:11px;height:11px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+    .gi{color:#aaa;font-size:10px;line-height:1.55;}
+    .gv{font-weight:bold;letter-spacing:0;}
+    .gv.hi {color:#ff8833;}
+    .gv.hi2{color:#00ff88;}
+    .gv.lo {color:#ff4455;}
+    hr.sep{border:none;border-top:1px solid #111;margin:8px 0;}
+    .formula{font-size:9px;color:#333;line-height:1.85;}
+
+    /* ── truth table ── */
+    #tt{
+      position:fixed;bottom:90px;right:14px;
+      background:rgba(6,4,14,0.95);border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px;padding:13px 15px;font-size:10px;
+      letter-spacing:1px;backdrop-filter:blur(12px);z-index:100;
+    }
+    #tt h3{font-size:9px;letter-spacing:3px;color:#333;margin-bottom:9px;text-transform:uppercase;}
+    table{border-collapse:collapse;width:100%;}
+    th{color:#444;font-size:9px;letter-spacing:1px;padding:3px 10px;text-align:center;}
+    td{padding:4px 10px;text-align:center;border-radius:3px;}
+    .tr-active td{background:rgba(255,204,0,0.08);color:#ffcc33;}
+    td.dim{color:#1a1a1a;}
+    td.tg{color:#ff44ff;}
+
+    /* ── flash message ── */
+    #lm{
+      position:fixed;top:14px;left:50%;transform:translateX(-50%);
+      background:rgba(6,4,14,0.96);border:1px solid rgba(255,195,0,0.22);
+      border-radius:8px;padding:10px 22px;font-size:12px;letter-spacing:2px;
+      color:#ffcc33;text-shadow:0 0 10px rgba(255,200,0,0.5);
+      pointer-events:none;opacity:0;transition:opacity 0.4s;z-index:200;white-space:nowrap;
+    }
+    #lm.tog{border-color:rgba(255,68,255,0.4);color:#ff44ff;text-shadow:0 0 12px rgba(255,68,255,0.7);}
+    #lm.hold{border-color:rgba(255,204,51,0.3);color:#ffcc33;}
+  </style>
+</head>
+<body>
+<div id="cc"></div>
+
+<!-- Gate legend -->
+<div id="ge">
+  <h3>NAND Gate States</h3>
+  <div class="gr">
+    <div class="gd" style="background:#180828;border:1px solid #dd44ff;"></div>
+    <div class="gi">G1: NAND(T, CLK, Q') → S'<br>S' = <span class="gv lo" id="g1v">1</span></div>
+  </div>
+  <div class="gr">
+    <div class="gd" style="background:#180828;border:1px solid #dd44ff;"></div>
+    <div class="gi">G2: NAND(T, CLK, Q) → R'<br>R' = <span class="gv lo" id="g2v">1</span></div>
+  </div>
+  <div class="gr">
+    <div class="gd" style="background:#1e0b00;border:1px solid #ff7733;"></div>
+    <div class="gi">G3: NAND(S', Q') → Q<br>Q &nbsp;= <span class="gv lo" id="g3v">0</span></div>
+  </div>
+  <div class="gr">
+    <div class="gd" style="background:#1e0b00;border:1px solid #ff7733;"></div>
+    <div class="gi">G4: NAND(R', Q) → Q'<br>Q' = <span class="gv hi" id="g4v">1</span></div>
+  </div>
+  <hr class="sep">
+  <div class="formula">
+    G1,G2 = 3-input NAND (Toggle control)<br>
+    G3,G4 = SR Latch (memory core)<br>
+    <span style="color:#ff44ff">⟳ Q feeds G2 &nbsp;·&nbsp; Q' feeds G1</span><br>
+    <span style="color:#00ff88">✓ T=0 → HOLD &nbsp;·&nbsp; T=1 → TOGGLE</span>
+  </div>
+</div>
+
+<!-- State panel -->
+<div id="sp">
+  <h3>Flip-Flop State</h3>
+  <div class="sr"><span class="sk">T</span>  <span class="sv lo"  id="sv-t">0</span></div>
+  <div class="sr"><span class="sk">CLK</span><span class="sv nt"  id="sv-c">—</span></div>
+  <div class="sr"><span class="sk">Q</span>  <span class="sv lo"  id="sv-q">0</span></div>
+  <div class="sr"><span class="sk">Q'</span> <span class="sv hi"  id="sv-b">1</span></div>
+  <div class="sr"><span class="sk">MODE</span><span class="sv nt" id="sv-m">HOLD</span></div>
+</div>
+
+<!-- Truth table -->
+<div id="tt">
+  <h3>Truth Table</h3>
+  <table>
+    <tr><th>CLK</th><th>T</th><th>Q(t+1)</th><th>Mode</th></tr>
+    <tr id="row-hold"> <td class="dim">↓/—</td><td class="dim">X</td><td class="dim">Q</td>   <td class="dim">Hold</td></tr>
+    <tr id="row-t0">   <td class="dim">↑</td>  <td class="dim">0</td><td class="dim">Q</td>   <td class="dim">Hold</td></tr>
+    <tr id="row-t1">   <td class="dim">↑</td>  <td class="dim">1</td><td class="tg">Q'</td>  <td class="tg">Toggle</td></tr>
+  </table>
+</div>
+
+<div id="lm"></div>
+
+<!-- Controls -->
+<div id="panel">
+  <div class="ig">
+    <span class="il">T</span>
+    <button class="tb off" id="btn-t" onclick="toggleT()"></button>
+    <span class="bd off" id="dt">0</span>
+  </div>
+  <div class="dv"></div>
+  <button class="ck" onclick="clockPulse()">&#9889; CLK Pulse</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FontLoader }    from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry }  from 'three/addons/geometries/TextGeometry.js';
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let T=0, Q=0, Qbar=1, clkLevel=0, clockAnim=false;
+
+// T FF uses 3-input NAND gates:
+//   G1: NAND(T, CLK, Q')  → S'
+//   G2: NAND(T, CLK, Q)   → R'
+function getSbar() { return (T & clkLevel & Qbar) ? 0 : 1; }
+function getRbar() { return (T & clkLevel & Q)    ? 0 : 1; }
+
+// ══════════════════════════════════════════════════════
+//  RENDERER + SCENE
+// ══════════════════════════════════════════════════════
+const container = document.getElementById('cc');
+const renderer  = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+renderer.toneMapping       = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.55;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020208);
+scene.fog = new THREE.FogExp2(0x020208, 0.014);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 80);
+camera.position.set(0, 6.5, 14);
+camera.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.07;
+controls.minDistance = 5;      controls.maxDistance = 26;
+controls.target.set(0, 0, 0);
+
+// ══════════════════════════════════════════════════════
+//  LIGHTING
+// ══════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0xffffff, 2.1));
+
+const sun = new THREE.DirectionalLight(0xffffff, 7);
+sun.position.set(5,10,7); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-15; sun.shadow.camera.right=15;
+sun.shadow.camera.top=10;   sun.shadow.camera.bottom=-10;
+scene.add(sun);
+
+const fl = new THREE.DirectionalLight(0x5544aa, 3.2);
+fl.position.set(-7,4,-3); scene.add(fl);
+const fb = new THREE.DirectionalLight(0xffeecc, 1.8);
+fb.position.set(0,-3,9); scene.add(fb);
+
+const boardGlow = new THREE.PointLight(0x220055, 3.0, 18);
+boardGlow.position.set(0,-0.4,0); scene.add(boardGlow);
+
+// Toggle pulse light (magenta — fires on toggle)
+const togLight = new THREE.PointLight(0xff44ff, 0, 10);
+togLight.position.set(0, 2.5, 0); scene.add(togLight);
+
+// Q/Qbar output lights
+const qLight  = new THREE.PointLight(0x00ff88, 0, 4);
+qLight.position.set(5.0,1.5,-1.4); scene.add(qLight);
+const qbLight = new THREE.PointLight(0xff3344, 0, 4);
+qbLight.position.set(5.0,1.5,+1.4); scene.add(qbLight);
+
+// ══════════════════════════════════════════════════════
+//  PCB BOARD
+// ══════════════════════════════════════════════════════
+const boardMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(16.5, 0.13, 9.5),
+  new THREE.MeshStandardMaterial({ color:0x08100e, roughness:0.65, metalness:0.07 })
+);
+boardMesh.position.y=-1.2; boardMesh.receiveShadow=true; scene.add(boardMesh);
+
+const gridMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(16.1,9.1,16,9),
+  new THREE.MeshBasicMaterial({ color:0x0d2218, wireframe:true, transparent:true, opacity:0.2 })
+);
+gridMesh.rotation.x=-Math.PI/2; gridMesh.position.y=-1.13; scene.add(gridMesh);
+
+function boardLine(x1,z1,x2,z2,col=0x0d2218) {
+  const g=new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(x1,-1.13,z1), new THREE.Vector3(x2,-1.13,z2)
+  ]);
+  scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({color:col})));
+}
+boardLine(-0.5,-4.7,-0.5,4.7, 0x0d2a20);
+
+// ══════════════════════════════════════════════════════
+//  GATE LAYOUT
+// ══════════════════════════════════════════════════════
+const GY=0.22, WY=0.22, FY=0.40, FY2=0.58;
+const GW=1.18, GH=0.44, GD=0.86;
+// 3-input NAND gates are slightly taller in Z
+const GD3=1.10;
+
+const PG1 = new THREE.Vector3(-1.8, GY, -1.4);
+const PG2 = new THREE.Vector3(-1.8, GY, +1.4);
+const PG3 = new THREE.Vector3(+2.2, GY, -1.4);
+const PG4 = new THREE.Vector3(+2.2, GY, +1.4);
+
+const X_IN  = -6.0;
+const X_OUT = +5.0;
+const Z_T   =  0.0;
+const Z_CLK = -0.8;
+
+const G1L=PG1.x-GW/2, G1R=PG1.x+GW/2;
+const G2L=PG2.x-GW/2, G2R=PG2.x+GW/2;
+const G3L=PG3.x-GW/2, G3R=PG3.x+GW/2;
+const G4L=PG4.x-GW/2, G4R=PG4.x+GW/2;
+
+// ══════════════════════════════════════════════════════
+//  GATE BOX HELPER
+// ══════════════════════════════════════════════════════
+function makeGateBox(pos, bodyCol, edgeCol, is3input=false) {
+  const group = new THREE.Group();
+  const depth = is3input ? GD3 : GD;
+  const bodyGeo = new THREE.BoxGeometry(GW, GH, depth);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color:bodyCol, roughness:0.36, metalness:0.22,
+    emissive:bodyCol, emissiveIntensity:0.14
+  });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.castShadow=body.receiveShadow=true; group.add(body);
+
+  const edgeMat=new THREE.LineBasicMaterial({color:edgeCol});
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(bodyGeo), edgeMat));
+
+  // NAND inversion bubble
+  const bubMat=new THREE.MeshStandardMaterial({
+    color:edgeCol, emissive:edgeCol, emissiveIntensity:0.88, roughness:0.25
+  });
+  const bub=new THREE.Mesh(new THREE.SphereGeometry(0.1,12,12), bubMat);
+  bub.position.set(GW/2+0.12,0,0); group.add(bub);
+
+  // Extra input pin notches for 3-input gate
+  if (is3input) {
+    const notchMat=new THREE.MeshStandardMaterial({color:edgeCol,emissive:edgeCol,emissiveIntensity:0.4});
+    [-0.32,0,0.32].forEach(z=>{
+      const n=new THREE.Mesh(new THREE.SphereGeometry(0.045,8,8),notchMat);
+      n.position.set(-GW/2-0.07,0,z); group.add(n);
+    });
+  }
+
+  group.position.copy(pos); scene.add(group);
+  return { group, bodyMat, edgeMat };
+}
+
+const g1 = makeGateBox(PG1, 0x180828, 0xdd44ff, true);  // 3-input (purple)
+const g2 = makeGateBox(PG2, 0x180828, 0xdd44ff, true);  // 3-input (purple)
+const g3 = makeGateBox(PG3, 0x1e0b00, 0xff7733);         // 2-input latch (orange)
+const g4 = makeGateBox(PG4, 0x1e0b00, 0xff7733);
+
+// ══════════════════════════════════════════════════════
+//  METALLIC PINS
+// ══════════════════════════════════════════════════════
+const pinMat=new THREE.MeshStandardMaterial({color:0xbbbbbb,roughness:0.12,metalness:0.97});
+function addPin(x,z) {
+  const p=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.8,10),pinMat);
+  p.position.set(x,-0.85,z); p.castShadow=true; scene.add(p);
+  const f=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.06,0.06),pinMat);
+  f.position.set(x+(x<0?-0.22:0.22),-1.17,z); scene.add(f);
+}
+[-1.8,-0.6,0.6,1.8].forEach(z=>{ addPin(-7.2,z); addPin(6.2,z); });
+
+// ══════════════════════════════════════════════════════
+//  OUTPUT INDICATORS
+// ══════════════════════════════════════════════════════
+function makeInd(x,z,hiCol) {
+  const mat=new THREE.MeshStandardMaterial({
+    color:0x111111, emissive:hiCol, emissiveIntensity:0.05, roughness:0.3
+  });
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(0.27,32,32), mat);
+  mesh.position.set(x,GY+0.62,z); mesh.castShadow=true; scene.add(mesh);
+  const light=new THREE.PointLight(hiCol,0,2.8);
+  light.position.copy(mesh.position); scene.add(light);
+  return {mesh,mat,light,hiCol};
+}
+const indQ  = makeInd(X_OUT, PG3.z, 0x00ff88);
+const indQb = makeInd(X_OUT, PG4.z, 0xff3344);
+
+// CLK sphere
+const clkMat=new THREE.MeshStandardMaterial({
+  color:0xffcc33, emissive:0xffcc33, emissiveIntensity:0.38, roughness:0.3
+});
+const clkSph=new THREE.Mesh(new THREE.SphereGeometry(0.21,32,32), clkMat);
+clkSph.position.set(X_IN,GY+0.58,Z_CLK); scene.add(clkSph);
+const clkLight=new THREE.PointLight(0xffcc33,0,3.5);
+clkLight.position.copy(clkSph.position); scene.add(clkLight);
+
+// T sphere (orange)
+const tMat=new THREE.MeshStandardMaterial({
+  color:0xff7722, emissive:0xff7722, emissiveIntensity:0.38, roughness:0.3
+});
+const tSph=new THREE.Mesh(new THREE.SphereGeometry(0.22,32,32), tMat);
+tSph.position.set(X_IN,GY+0.58,Z_T); scene.add(tSph);
+
+// ══════════════════════════════════════════════════════
+//  WIRES
+// ══════════════════════════════════════════════════════
+const wireDefs=[];
+const COL_T_HI   = new THREE.Color(0xff8833);
+const COL_T_LO   = new THREE.Color(0x150800);
+const COL_CLK_ON = new THREE.Color(0xffcc33);
+const COL_CLK_LO = new THREE.Color(0x1a1200);
+const COL_SP_HI  = new THREE.Color(0xee55ff);
+const COL_SP_LO  = new THREE.Color(0x130820);
+const COL_Q_HI   = new THREE.Color(0x00ff88);
+const COL_Q_LO   = new THREE.Color(0x041208);
+const COL_QB_HI  = new THREE.Color(0xff3344);
+const COL_QB_LO  = new THREE.Color(0x120304);
+const COL_DATA_HI= new THREE.Color(0xaaaaee);
+const COL_DATA_LO= new THREE.Color(0x0a0a14);
+
+function addWire(pts, getVal, type='data') {
+  const geo=new THREE.BufferGeometry().setFromPoints(pts.map(([x,y,z])=>new THREE.Vector3(x,y,z)));
+  const mat=new THREE.LineBasicMaterial({color:COL_DATA_LO});
+  scene.add(new THREE.Line(geo,mat));
+  wireDefs.push({mat,getVal,type});
+}
+
+// ── T input ──────────────────────────────────────────
+// T trunk
+addWire([
+  [X_IN,WY,Z_T], [-4.5,WY,Z_T]
+], ()=>T, 'T');
+
+// T branch → G1 top pin
+addWire([
+  [-4.5,WY,Z_T],
+  [-4.5,WY,PG1.z+0.32],
+  [G1L, WY,PG1.z+0.32]
+], ()=>T, 'T');
+
+// T branch → G2 bottom pin
+addWire([
+  [-4.5,WY,Z_T],
+  [-4.5,WY,PG2.z-0.32],
+  [G2L, WY,PG2.z-0.32]
+], ()=>T, 'T');
+
+// ── CLK input ────────────────────────────────────────
+// CLK trunk
+addWire([
+  [X_IN,WY,Z_CLK], [-3.6,WY,Z_CLK]
+], ()=>clkLevel, 'CLK');
+
+// CLK → G1 middle pin
+addWire([
+  [-3.6,WY,Z_CLK],
+  [-3.6,WY,PG1.z],
+  [G1L, WY,PG1.z]
+], ()=>clkLevel, 'CLK');
+
+// CLK → G2 middle pin
+addWire([
+  [-3.6,WY,Z_CLK],
+  [-3.6,WY,PG2.z],
+  [G2L, WY,PG2.z]
+], ()=>clkLevel, 'CLK');
+
+// ── S' (G1 out → G3 in) ──────────────────────────────
+addWire([
+  [G1R,WY,PG1.z], [G3L,WY,PG3.z]
+], getSbar, 'Sp');
+
+// ── R' (G2 out → G4 in) ──────────────────────────────
+addWire([
+  [G2R,WY,PG2.z], [G4L,WY,PG4.z]
+], getRbar, 'Sp');
+
+// ── Q output ─────────────────────────────────────────
+addWire([[G3R,WY,PG3.z],[X_OUT,WY,PG3.z]], ()=>Q, 'Q');
+
+// ── Q' output ────────────────────────────────────────
+addWire([[G4R,WY,PG4.z],[X_OUT,WY,PG4.z]], ()=>Qbar, 'Qb');
+
+// ── Cross latch feedback (G3 Q → G4 / G4 Q' → G3) ───
+// Q → G4 input (forward latch)
+addWire([
+  [G3R+0.12,WY,     PG3.z],
+  [3.6,     FY,     PG3.z],
+  [3.6,     FY,     PG4.z],
+  [G4R+0.12,FY,     PG4.z],
+  [G4R,     FY,     PG4.z]
+], ()=>Q, 'Q');
+
+// Q' → G3 input (forward latch)
+addWire([
+  [G4R+0.12,WY,      PG4.z],
+  [3.8,     FY+0.07, PG4.z],
+  [3.8,     FY+0.07, PG3.z],
+  [G3R+0.12,FY+0.07, PG3.z],
+  [G3R,     FY+0.07, PG3.z]
+], ()=>Qbar, 'Qb');
+
+// ── KEY FEEDBACK: Q' → G1 bottom pin (T FF specific!) ─
+// This is the toggle feedback path — Q' routes back to G1
+addWire([
+  [G4R+0.12, WY,       PG4.z],
+  [4.1,      FY2,      PG4.z],
+  [4.1,      FY2,      3.85],
+  [-5.2,     FY2,      3.85],
+  [-5.2,     FY2,      PG1.z-0.32],
+  [G1L,      FY2,      PG1.z-0.32]
+], ()=>Qbar, 'Qb');
+
+// ── KEY FEEDBACK: Q → G2 top pin (T FF specific!) ─────
+// Q routes back to G2
+addWire([
+  [G3R+0.12, WY,       PG3.z],
+  [4.3,      FY2+0.07, PG3.z],
+  [4.3,      FY2+0.07, -3.85],
+  [-5.4,     FY2+0.07, -3.85],
+  [-5.4,     FY2+0.07, PG2.z+0.32],
+  [G2L,      FY2+0.07, PG2.z+0.32]
+], ()=>Q, 'Q');
+
+// ══════════════════════════════════════════════════════
+//  WIRE COLOR REFRESH
+// ══════════════════════════════════════════════════════
+function refreshWires() {
+  wireDefs.forEach(({mat,getVal,type})=>{
+    const v=getVal();
+    switch(type) {
+      case 'T':   mat.color.set(v ? COL_T_HI   : COL_T_LO);   break;
+      case 'CLK': mat.color.set(v ? COL_CLK_ON  : COL_CLK_LO); break;
+      case 'Sp':  mat.color.set(v ? COL_SP_HI   : COL_SP_LO);  break;
+      case 'Q':   mat.color.set(v ? COL_Q_HI    : COL_Q_LO);   break;
+      case 'Qb':  mat.color.set(v ? COL_QB_HI   : COL_QB_LO);  break;
+      default:    mat.color.set(v ? COL_DATA_HI  : COL_DATA_LO);break;
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  GATE GLOW
+// ══════════════════════════════════════════════════════
+function refreshGates() {
+  const Sp=getSbar(), Rp=getRbar();
+
+  // G1 glows when S'=0 (set condition)
+  g1.bodyMat.emissiveIntensity = Sp===0 ? 0.65 : 0.10;
+  g1.bodyMat.emissive.set(Sp===0 ? 0x2a0855 : 0x0e0420);
+
+  // G2 glows when R'=0 (reset condition)
+  g2.bodyMat.emissiveIntensity = Rp===0 ? 0.65 : 0.10;
+  g2.bodyMat.emissive.set(Rp===0 ? 0x2a0855 : 0x0e0420);
+
+  // G3 (Q latch output)
+  g3.bodyMat.emissiveIntensity = Q    ? 0.62 : 0.08;
+  g3.bodyMat.emissive.set(Q    ? 0x281200 : 0x0a0400);
+
+  // G4 (Q' latch output)
+  g4.bodyMat.emissiveIntensity = Qbar ? 0.62 : 0.08;
+  g4.bodyMat.emissive.set(Qbar ? 0x281200 : 0x0a0400);
+}
+
+// ══════════════════════════════════════════════════════
+//  INDICATORS
+// ══════════════════════════════════════════════════════
+function refreshIndicators() {
+  function setInd(ind, on) {
+    ind.mat.color.set(on ? ind.hiCol : 0x0e0e0e);
+    ind.mat.emissive.set(on ? ind.hiCol : 0x000000);
+    ind.mat.emissiveIntensity = on ? 2.8 : 0.04;
+    ind.light.intensity = on ? 2.8 : 0;
+  }
+  setInd(indQ,  Q===1);
+  setInd(indQb, Qbar===1);
+
+  tMat.emissiveIntensity = T ? 1.3 : 0.28;
+  qLight.intensity  = Q    ? 2.2 : 0;
+  qbLight.intensity = Qbar ? 2.2 : 0;
+}
+
+// ══════════════════════════════════════════════════════
+//  UI REFRESH
+// ══════════════════════════════════════════════════════
+function refreshUI() {
+  const Sp=getSbar(), Rp=getRbar();
+
+  function gv(id,v) {
+    const el=document.getElementById(id);
+    el.textContent=v; el.className='gv '+(v?'hi':'lo');
+  }
+  gv('g1v',Sp); gv('g2v',Rp); gv('g3v',Q); gv('g4v',Qbar);
+
+  function sv(id,val,cls) {
+    const el=document.getElementById(id);
+    el.textContent=val; el.className='sv '+cls;
+  }
+  sv('sv-t', T,    T?'hi':'lo');
+  sv('sv-q', Q,    Q?'hi2':'lo');
+  sv('sv-b', Qbar, Qbar?'hi':'lo');
+
+  const me=document.getElementById('sv-m');
+  if (clkLevel===0) {
+    me.textContent='HOLD'; me.className='sv nt';
+  } else if (T===0) {
+    me.textContent='HOLD'; me.className='sv nt';
+  } else {
+    me.textContent='TOGGLE'; me.className='sv tg';
+  }
+
+  // Truth table highlight
+  document.getElementById('row-hold').className = (clkLevel===0)?'tr-active':'';
+  document.getElementById('row-t0').className   = (clkLevel===1&&T===0)?'tr-active':'';
+  document.getElementById('row-t1').className   = (clkLevel===1&&T===1)?'tr-active':'';
+
+  // T button
+  const btn=document.getElementById('btn-t');
+  btn.className='tb '+(T?'on':'off');
+  const dt=document.getElementById('dt');
+  dt.textContent=T; dt.className='bd '+(T?'on':'off');
+}
+
+function refresh() {
+  refreshWires(); refreshGates(); refreshIndicators(); refreshUI();
+}
+
+// ══════════════════════════════════════════════════════
+//  T FF LOGIC  (applied on rising edge)
+// ══════════════════════════════════════════════════════
+function applyT() {
+  if (T===0) {
+    // HOLD — no change
+    showMsg('🔒 HOLD — T=0, Q unchanged', 'hold');
+  } else {
+    // TOGGLE — Q flips
+    const prev=Q;
+    Q=prev^1; Qbar=Q^1;
+    showMsg(`⟳ TOGGLE — Q: ${prev} → ${Q}`, 'tog');
+  }
+  refresh();
+}
+
+// ══════════════════════════════════════════════════════
+//  CLOCK PULSE + TOGGLE FLASH
+// ══════════════════════════════════════════════════════
+let togFlashTimer=0;
+
+function clockPulse() {
+  if (clockAnim) return;
+  clockAnim=true;
+  const ce=document.getElementById('sv-c');
+  ce.textContent='↑'; ce.className='sv hi';
+
+  const dur=560, t0=performance.now();
+  const willToggle = (T===1);
+
+  function tick(now) {
+    const t=Math.min((now-t0)/dur,1);
+    const ease=Math.sin(t*Math.PI);
+    clkLevel=(t<0.55)?1:0;
+
+    clkMat.emissiveIntensity=0.38+ease*3.0;
+    clkLight.intensity=ease*5.0;
+    clkSph.scale.setScalar(1+ease*0.7);
+
+    // Toggle feedback wire lights flash during clock-high
+    if (willToggle && clkLevel===1) {
+      togLight.intensity = ease*6.0;
+      togFlashTimer=1;
+    } else if (!willToggle || clkLevel===0) {
+      togLight.intensity=0;
+    }
+
+    refresh();
+
+    if (t<1) {
+      requestAnimationFrame(tick);
+    } else {
+      clkLevel=0;
+      clkMat.emissiveIntensity=0.38;
+      clkLight.intensity=0;
+      clkSph.scale.setScalar(1);
+      ce.textContent='—'; ce.className='sv nt';
+      clockAnim=false;
+      applyT();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function toggleT() {
+  T^=1; refresh();
+}
+window.toggleT    = toggleT;
+window.clockPulse = clockPulse;
+
+// ══════════════════════════════════════════════════════
+//  FLASH MESSAGE
+// ══════════════════════════════════════════════════════
+let msgTO;
+function showMsg(text, type='hold') {
+  const el=document.getElementById('lm');
+  el.textContent=text;
+  el.className=type;
+  el.style.opacity='1';
+  clearTimeout(msgTO);
+  msgTO=setTimeout(()=>{ el.style.opacity='0'; },2700);
+}
+
+// ══════════════════════════════════════════════════════
+//  3D TEXT LABELS
+// ══════════════════════════════════════════════════════
+const fLoader=new FontLoader();
+fLoader.load(
+  'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/fonts/helvetiker_regular.typeface.json',
+  (font)=>{
+    function lbl(text,x,y,z,color=0xffffff,sz=0.2) {
+      const geo=new TextGeometry(text,{font,size:sz,depth:0.04,curveSegments:6});
+      geo.computeBoundingBox();
+      const w=geo.boundingBox.max.x-geo.boundingBox.min.x;
+      const mat=new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:0.38});
+      const m=new THREE.Mesh(geo,mat);
+      m.position.set(x-w/2,y,z); scene.add(m);
+    }
+
+    lbl('NAND3',PG1.x,GY+0.32,PG1.z+0.08,0xcc44ff,0.13);
+    lbl('NAND3',PG2.x,GY+0.32,PG2.z+0.08,0xcc44ff,0.13);
+    lbl('NAND', PG3.x,GY+0.32,PG3.z+0.05,0xff7733,0.14);
+    lbl('NAND', PG4.x,GY+0.32,PG4.z+0.05,0xff7733,0.14);
+
+    lbl('G1',PG1.x,GY+0.56,PG1.z,0xdd55ff,0.20);
+    lbl('G2',PG2.x,GY+0.56,PG2.z,0xdd55ff,0.20);
+    lbl('G3',PG3.x,GY+0.56,PG3.z,0xffaa55,0.20);
+    lbl('G4',PG4.x,GY+0.56,PG4.z,0xffaa55,0.20);
+
+    lbl('T',   X_IN,      GY+0.52, Z_T+0.1, 0xff8833,0.28);
+    lbl('CLK', X_IN-0.16, GY+0.52, Z_CLK-0.1, 0xffcc33,0.20);
+
+    lbl("S'", -0.5,  WY+0.27, PG3.z,0xcc88ff,0.15);
+    lbl("R'", -0.5,  WY+0.27, PG4.z,0xcc88ff,0.15);
+
+    lbl('Q',  X_OUT, GY+1.08,PG3.z,0x00ff88,0.28);
+    lbl("Q'", X_OUT, GY+1.08,PG4.z,0xff4455,0.28);
+
+    // Feedback arc labels
+    lbl("Q'->G1",  -2.6, FY2+0.16, 3.4, 0x883399,0.12);
+    lbl("Q->G2",   -2.6, FY2+0.24,-3.4, 0x226644,0.12);
+
+    // PCB section labels
+    lbl('TOGGLE CTRL', -2.2,-1.06,-4.0,0x1a0835,0.13);
+    lbl('SR LATCH',     1.5,-1.06,-4.0,0x3a1800,0.13);
+  }
+);
+
+// ══════════════════════════════════════════════════════
+//  PARTICLES
+// ══════════════════════════════════════════════════════
+const pBuf=new Float32Array(600*3);
+for(let i=0;i<600;i++){
+  pBuf[i*3]  =(Math.random()-0.5)*24;
+  pBuf[i*3+1]=(Math.random()-0.5)*10;
+  pBuf[i*3+2]=(Math.random()-0.5)*16;
+}
+const pGeo=new THREE.BufferGeometry();
+pGeo.setAttribute('position',new THREE.BufferAttribute(pBuf,3));
+scene.add(new THREE.Points(pGeo,new THREE.PointsMaterial({
+  color:0x110820,size:0.022,transparent:true,opacity:0.28
+})));
+
+// ══════════════════════════════════════════════════════
+//  RENDER LOOP
+// ══════════════════════════════════════════════════════
+const clk3=new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t=clk3.getElapsedTime();
+
+  const float=Math.sin(t*0.62)*0.018;
+  [g1,g2,g3,g4].forEach(g=>{ g.group.position.y=GY+float; });
+
+  boardGlow.intensity=2.6+Math.sin(t*1.0)*0.7;
+
+  // Sustained toggle glow when T=1 (pulsing reminder)
+  if (T===1) {
+    togLight.intensity=0.4+Math.sin(t*4)*0.35;
+  } else if (togFlashTimer<=0) {
+    togLight.intensity*=0.92; // fade out
+  }
+  togFlashTimer=Math.max(0,togFlashTimer-0.02);
+
+  // Pulsing output indicators
+  if (Q)    { const p=2.4+Math.sin(t*5.2)*0.55;     indQ.mat.emissiveIntensity=p;  indQ.light.intensity=p; }
+  if (Qbar) { const p=2.4+Math.sin(t*5.2+1.6)*0.55; indQb.mat.emissiveIntensity=p; indQb.light.intensity=p; }
+
+  controls.update();
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+refresh();
+animate();
+</script>
+</body>
+</html>

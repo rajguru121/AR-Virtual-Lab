@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AR/VR Lab — Combinational Workspace</title>
+  <link rel="stylesheet" href="arvr-lab-platform.css">
+  <style>
+    /* Styles from your original file */
+    .pin { display:inline-block; padding:2px 6px; border-radius:4px; font-size:12px; margin:2px; background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.12); }
+    .input-switch { padding:6px 10px; border-radius:6px; border:none; background:var(--error); color:#fff; cursor:pointer; }
+    .output-led { padding:6px 8px; border-radius:6px; border:2px solid rgba(0,0,0,0.06); display:inline-block; }
+    .wire { pointer-events:none; }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-container">
+      <div class="logo"><div class="logo-icon">⚡</div><span>Combinational Lab</span></div>
+      <div class="nav-links">
+        <!-- FIX: Ensured all links are standard <a> tags -->
+        <a class="nav-link" href="deld-landing.html">Back to DELD Hub</a>
+        <a class="nav-link" href="arvr-lab-platform.html">Home</a>
+        <button class="launch-ar-btn" onclick="openARModal()">🥽 Launch AR Mode</button>
+      </div>
+    </div>
+  </nav>
+
+  <main style="padding:1.5rem; max-width:1200px; margin:0 auto;">
+    <section id="deld-page">
+      <div class="workspace-header">
+        <div class="workspace-title"><span>⚡</span><span style="margin-left:8px">DELD Logic Simulator</span></div>
+        <div>
+          <button class="tool-btn" onclick="setTool('select')">Select</button>
+          <button class="tool-btn" onclick="setTool('connect')">Connect</button>
+          <button class="tool-btn" onclick="clearCircuit()">Clear</button>
+          <button class="tool-btn" onclick="exportCircuitToClipboard()">Export JSON</button>
+        </div>
+      </div>
+      <div class="drag-drop-container" style="height:520px;">
+        <div class="components-panel">
+          <div class="panel-title">Components</div>
+          <div id="components-list"></div>
+        </div>
+        <div id="canvas" class="canvas-area" ondrop="drop(event)" ondragover="allowDrop(event)">
+          <div id="empty-state" class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 100px; height: 100px; opacity: 0.3; margin-bottom: 1rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+            <p>Drag components here to start building</p>
+          </div>
+        </div>
+        <div class="properties-panel">
+          <div class="panel-title">Properties</div>
+          <div id="circuit-warnings" style="color:#f59e0b; margin:8px 0; font-weight:600;"></div>
+          <div id="properties-content"><p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to view properties</p></div>
+          <div id="truth-table" style="margin-top:12px; max-height:220px; overflow:auto; font-family:monospace; background:rgba(255,255,255,0.03); padding:8px; border-radius:6px; color:#000;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="ar-modal" id="arModal">
+    <div class="ar-content">
+      <div class="ar-header"><div class="ar-title">🥽 AR Visualization Mode</div><button class="ar-close" onclick="closeARModal()">✕</button></div>
+      <div class="ar-viewer"><p style="color:var(--gray)">Unity AR Viewer placeholder — use exported JSON / URL to visualize circuit inside Unity AR app.</p></div>
+      <div style="display:flex; gap:8px;">
+        <button class="unity-launch-btn" onclick="promptSendToUnity()">Send Circuit to Unity (HTTP)</button>
+        <button class="unity-launch-btn" onclick="copyLastExport()">Copy last JSON</button>
+      </div>
+    </div>
+  </div>
+  <footer style="margin-top:18px; color:var(--gray); text-align:center;">Combinational Logic Lab.</footer>
+  <script>
+    // --- Components definitions (Combinational Only) ---
+    const moduleComponents = [
+      { name: 'AND Gate', type: 'gate', icon: 'AND', inputs: 2, func: (a,b) => (a & b) | 0 },
+      { name: 'OR Gate', type: 'gate', icon: 'OR', inputs: 2, func: (a,b) => (a | b) | 0 },
+      { name: 'NOT Gate', type: 'gate', icon: 'NOT', inputs: 1, func: (a) => a ? 0 : 1 },
+      { name: 'XOR Gate', type: 'gate', icon: 'XOR', inputs: 2, func: (a,b) => (a ^ b) | 0 },
+      { name: 'INPUT Switch', type: 'input', icon: 'IN', value:0 },
+      { name: 'OUTPUT LED', type: 'output', icon: 'OUT' }
+    ];
+
+    // State
+    let components = []; // list of component objects
+    let idCounter = 0;
+    let tool = 'select';
+    let pending = null; // {compId, pinType, pinIndex, pinElId}
+    let lastExport = null;
+    let wires = []; // Each wire: {from: {compId, pinId}, to: {compId, pinId}}
+
+    // --- Components panel ---
+    function setupComponentsPanel(){
+      const list = document.getElementById('components-list');
+      list.innerHTML = '';
+      moduleComponents.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'draggable-component';
+        el.textContent = c.name;
+        el.draggable = true;
+        el.dataset.name = c.name;
+        el.dataset.type = c.type;
+        el.addEventListener('dragstart', e=>{
+          e.dataTransfer.setData('name', c.name);
+          e.dataTransfer.setData('type', c.type);
+        });
+        el.addEventListener('click', ()=>{ createAt(30,30,c.name); });
+        list.appendChild(el);
+      });
+    }
+
+    // --- Drag/drop ---
+    function allowDrop(e){ e.preventDefault(); }
+    function drop(e){ e.preventDefault(); const name = e.dataTransfer.getData('name'); if(!name) return; const rect = e.currentTarget.getBoundingClientRect(); let x = e.clientX - rect.left; let y = e.clientY - rect.top; createAt(x,y,name); }
+
+    function createAt(x,y,name){
+      document.getElementById('empty-state').style.display='none';
+      const def = moduleComponents.find(m=>m.name===name);
+      if(!def) return;
+      idCounter++; const id = 'c'+idCounter;
+      const dom = document.createElement('div'); dom.className='dropped-item'; dom.id=id; dom.style.left = (x)+ 'px'; dom.style.top=(y)+'px';
+
+      const instanceName = `${def.name} ${idCounter}`;
+      let inner = `<div style="padding:6px;font-weight:600">${def.icon}<div style="font-size:12px; font-weight:500; margin-top:4px;">${instanceName}</div></div>`;
+      if(def.type==='gate'){
+        inner += '<div style="display:flex; gap:8px; align-items:center;">';
+        for(let i=0;i<def.inputs;i++) inner += `<div id="${id}-in-${i}" class="pin input-pin" data-pin-type="input" data-index="${i}">A${i+1}</div>`;
+        inner += `<div style="width:12px"></div>`;
+        inner += `<div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">Q</div>`;
+        inner += '</div>';
+      } else if(def.type==='input'){
+        inner = `<button id="${id}-switch" class="input-switch">0</button><div style="margin-top:6px" id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">Q</div>`;
+      } else if(def.type==='output'){
+        inner = `<div class="output-led">OUT: <span id="${id}-value">0</span></div><div style="margin-top:6px" id="${id}-in-0" class="pin input-pin" data-pin-type="input" data-index="0">A1</div>`;
+      }
+ 
+      dom.innerHTML = inner;
+      document.getElementById('canvas').appendChild(dom);
+ 
+      const model = { id, name: instanceName, baseName: def.name, type: def.type, x,y, inputs:[], outputs:[], func:def.func || null, value: def.value||0 };
+ 
+      if(def.type==='gate'){
+        for(let i=0;i<def.inputs;i++) model.inputs.push({ pinId:`${id}-in-${i}`, connectedTo:null, value:0 });
+        model.outputs.push({ pinId:`${id}-out-0`, connectedTo:[], value:0 });
+      } else if(def.type==='input'){
+        model.outputs.push({ pinId:`${id}-out-0`, connectedTo:[], value:model.value });
+      } else if(def.type==='output'){
+        model.inputs.push({ pinId:`${id}-in-0`, connectedTo:null, value:0 });
+      }
+ 
+      components.push(model);
+
+      dom.querySelectorAll('.pin').forEach(pin=>pin.addEventListener('click', onPinClick));
+      const sw = dom.querySelector('.input-switch'); if(sw) sw.addEventListener('click', ()=>{ toggleInput(id); });
+      dom.addEventListener('click', (e) => {
+        if (e.target.closest('.pin') || e.target.closest('.input-switch')) return;
+        select(id);
+      });
+
+      makeDraggable(dom);
+      assignProbeNames();
+      updateProperties(model);
+      drawWires(); runSimulation();
+    }
+
+    // --- Dragging DOM elements ---
+    function makeDraggable(el){
+      el.onmousedown = function(e){ if(e.target.classList.contains('pin')||e.target.classList.contains('input-switch')) return; e.preventDefault(); const startX = e.clientX; const startY = e.clientY; const origLeft = el.offsetLeft; const origTop = el.offsetTop; function moveHandler(ev){ el.style.left = origLeft + (ev.clientX - startX) + 'px'; el.style.top = origTop + (ev.clientY - startY) + 'px'; drawWires(); }
+      function upHandler(){ document.removeEventListener('mousemove', moveHandler); document.removeEventListener('mouseup', upHandler); }
+      document.addEventListener('mousemove', moveHandler); document.addEventListener('mouseup', upHandler); };
+    }
+
+    // --- Pin click & connect logic ---
+    function onPinClick(e){ e.stopPropagation(); const el = e.currentTarget; const pinType = el.dataset.pinType; const index = Number(el.dataset.index); const compEl = el.closest('.dropped-item'); const compId = compEl.id; if(tool!=='connect'){ select(compId); return; }
+
+      if(!pending){ 
+        pending = { compId, pinType, index, pinElId:el.id || (compId+'-pin') };
+        el.style.boxShadow = '0 0 0 4px rgba(245,158,11,0.2)';
+      } else {
+        const a = pending; const b = { compId, pinType, index, pinElId:el.id || (compId+'-pin2') };
+        const compA = components.find(c=>c.id===a.compId); const compB = components.find(c=>c.id===b.compId);
+        let sourceComp, destComp, sourcePinObj, destPinObj;
+        if(a.pinType==='output' && b.pinType==='input'){ sourceComp=compA; destComp=compB; sourcePinObj = sourceComp.outputs[a.index]; destPinObj = destComp.inputs[b.index]; }
+        else if(a.pinType==='input' && b.pinType==='output'){ sourceComp=compB; destComp=compA; sourcePinObj = sourceComp.outputs[b.index]; destPinObj = destComp.inputs[a.index]; }
+        else { alert('Invalid connection. Connect an output pin to an input pin.'); clearPending(); return; }
+
+        if(!sourcePinObj || !destPinObj){ alert('Pin not found'); clearPending(); return; }
+        if(destPinObj.connectedTo){ alert('Input already connected.'); clearPending(); return; }
+
+        destPinObj.connectedTo = { componentId: sourceComp.id, outputIndex: sourceComp.outputs.indexOf(sourcePinObj) };
+        sourcePinObj.connectedTo.push({ componentId: destComp.id, inputIndex: destComp.inputs.indexOf(destPinObj) });
+        wires.push({ from: { compId: sourceComp.id, pinId: sourcePinObj.pinId }, to: { compId: destComp.id, pinId: destPinObj.pinId } });
+        clearPending(); drawWires(); runSimulation();
+      }
+    }
+
+    function clearPending(){ if(!pending) return; const pinEl = document.querySelector(`#${pending.pinElId}`); if(pinEl) pinEl.style.boxShadow='none'; pending = null; }
+
+    // --- Drawing wires using SVG ---
+    function drawWires(){ const canvas = document.getElementById('canvas'); 
+      const old = canvas.querySelector('svg.drawing'); if(old) old.remove();
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.classList.add('drawing'); svg.style.position='absolute'; svg.style.left='0'; svg.style.top='0'; svg.style.width='100%'; svg.style.height='100%';
+      const defs = document.createElementNS('http://www.w3.org/2000/svg','defs'); const marker = document.createElementNS('http://www.w3.org/2000/svg','marker'); marker.setAttribute('id','arrow'); marker.setAttribute('markerWidth','6'); marker.setAttribute('markerHeight','6'); marker.setAttribute('refX','6'); marker.setAttribute('refY','3'); marker.setAttribute('orient','auto'); const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon'); poly.setAttribute('points','0 0, 6 3, 0 6'); poly.setAttribute('fill','#4f46e5'); marker.appendChild(poly); defs.appendChild(marker); svg.appendChild(defs);
+
+      components.forEach(c=>{
+        c.outputs.forEach(out=>{
+          out.connectedTo.forEach(conn=>{
+            const srcEl = document.getElementById(out.pinId); 
+            const destComp = components.find(x=>x.id===conn.componentId); 
+            if (!destComp || !destComp.inputs[conn.inputIndex]) return; // Failsafe
+            const destIn = destComp.inputs[conn.inputIndex]; 
+            const dstEl = document.getElementById(destIn.pinId);
+            if(!srcEl || !dstEl) return;
+            const canvasRect = document.getElementById('canvas').getBoundingClientRect(); const s = srcEl.getBoundingClientRect(); const d = dstEl.getBoundingClientRect(); const x1 = s.left + s.width/2 - canvasRect.left; const y1 = s.top + s.height/2 - canvasRect.top; const x2 = d.left + d.width/2 - canvasRect.left; const y2 = d.top + d.height/2 - canvasRect.top;
+            const line = document.createElementNS('http://www.w3.org/2000/svg','line'); line.setAttribute('x1',x1); line.setAttribute('y1',y1); line.setAttribute('x2',x2); line.setAttribute('y2',y2); line.setAttribute('stroke', out.value===1? '#10b981' : '#94a3b8'); line.setAttribute('stroke-width','3'); line.setAttribute('marker-end','url(#arrow)'); svg.appendChild(line);
+          });
+        });
+      });
+
+      document.getElementById('canvas').appendChild(svg);
+    }
+
+    // --- Simulation: simple iterative combinational evaluator ---
+    function runSimulation(){ 
+      assignProbeNames();
+      let changed=true; let iter=0; const maxIter=50; 
+      while(changed && iter<maxIter){ 
+        changed=false; iter++;
+        
+        // Propagate input switch values
+        components.filter(c=>c.type==='input').forEach(i=>{ 
+            if (i.outputs[0].value !== i.value) {
+                i.outputs[0].value = i.value; 
+                changed=true;
+            }
+        });
+
+        // Evaluate gates
+        components.filter(c=>c.type==='gate').forEach(g=>{
+          const inputs = g.inputs.map(inp=>{ if(inp.connectedTo){ const s = components.find(x=>x.id===inp.connectedTo.componentId); return s.outputs[inp.connectedTo.outputIndex].value; } return 0; });
+          const out = g.func(...inputs) | 0; 
+          if(g.outputs[0].value !== out){ g.outputs[0].value = out; changed=true; }
+        });
+ 
+       // Propagate to outputs
+       components.filter(c=>c.type==='output').forEach(o=>{
+         let val=0; 
+         if(o.inputs[0].connectedTo){ const s = components.find(x=>x.id===o.inputs[0].connectedTo.componentId); val = s.outputs[o.inputs[0].connectedTo.outputIndex].value; }
+         const span = document.getElementById(`${o.id}-value`); 
+         if(span) span.textContent = val; 
+         if(o.inputs[0]) o.inputs[0].value = val; 
+       });
+       
+       if(changed) drawWires();
+     }
+      
+      const warnings = validateCircuit();
+      if(iter>=maxIter && changed) warnings.push('Possible cyclic or oscillating connection (simulation reached max iterations).');
+      document.getElementById('circuit-warnings').innerHTML = warnings.length ? warnings.map(w=>`• ${w}`).join('<br>') : '';
+ 
+      generateTruthTable();
+    }
+
+    // --- Validation helpers ---
+    function validateCircuit(){
+      const warnings = [];
+      components.forEach(c=>{
+        if((c.type==='gate' || c.type==='output') && c.inputs){
+          c.inputs.forEach((inp, idx)=>{
+            if(!inp.connectedTo) warnings.push(`${c.name || c.id} input A${idx+1} is unconnected`);
+          });
+        }
+      });
+      return Array.from(new Set(warnings)); // dedupe
+    }
+
+    // --- Clone & evaluate helper for truth table ---
+    function evaluateOnClone(inputValues, inputOrder){
+      const clone = JSON.parse(JSON.stringify(components));
+      clone.forEach(c=>{
+        if(c.type==='gate'){
+          const def = moduleComponents.find(m=>m.name===c.baseName);
+          c.func = def ? def.func : null;
+        }
+      });
+      inputOrder.forEach((id, i)=>{
+        const cc = clone.find(x=>x.id===id);
+        if(cc){ cc.value = inputValues[i]; if(cc.outputs && cc.outputs[0]) cc.outputs[0].value = inputValues[i]; }
+      });
+
+      let changed = true, iter = 0, maxIter = 50;
+      while(changed && iter<maxIter){
+        changed = false; iter++;
+        components.filter(c=>c.type==='input').forEach(i=>{ i.outputs[0].value = i.value; });
+        clone.filter(c=>c.type==='gate').forEach(g=>{
+          const inputs = g.inputs.map(inp=>{
+            if(inp.connectedTo){
+              const s = clone.find(x=>x.id===inp.connectedTo.componentId);
+              return s ? s.outputs[inp.connectedTo.outputIndex].value : 0;
+            }
+            return 0;
+          });
+          const out = (g.func ? g.func(...inputs) : 0) | 0;
+          if(g.outputs[0].value !== out){ g.outputs[0].value = out; changed = true; }
+        });
+        clone.filter(c=>c.type==='output').forEach(o=>{
+          let val = 0;
+          if(o.inputs[0] && o.inputs[0].connectedTo){
+            const s = clone.find(x=>x.id===o.inputs[0].connectedTo.componentId);
+            val = s ? s.outputs[o.inputs[0].connectedTo.outputIndex].value : 0;
+          }
+          if(o.inputs[0]) o.inputs[0].value = val;
+        });
+      }
+
+      const outputs = components.filter(c=>c.type==='output');
+      return outputs.map(o=>{
+        const oc = clone.find(x=>x.id===o.id);
+        if(!oc || !oc.inputs || !oc.inputs[0]) return 0;
+        let val = 0;
+        if (oc.inputs[0].connectedTo) {
+            const s = clone.find(x=>x.id===oc.inputs[0].connectedTo.componentId);
+            val = s ? s.outputs[oc.inputs[0].connectedTo.outputIndex].value : 0;
+        }
+        return val;
+      });
+    }
+
+    // --- Truth table generation ---
+    function generateTruthTable(){
+      assignProbeNames();
+      const inputs = components.filter(c=>c.type==='input');
+      const outputs = components.filter(c=>c.type==='output');
+      const container = document.getElementById('truth-table');
+      if(inputs.length===0 || outputs.length===0){ container.innerHTML = '<p style="color:#94a3b8">No inputs or outputs to build truth table.</p>'; return; }
+
+      const hasUnconnectedInputs = components.some(c =>
+        (c.type === 'gate' || c.type === 'output') &&
+        c.inputs.some(inp => !inp.connectedTo)
+      );
+
+      if (hasUnconnectedInputs) {
+        container.innerHTML = '<p style="color:#f59e0b">Connect all component inputs to generate the truth table.</p>';
+        return;
+      }
+      if(inputs.length > 8){ container.innerHTML = '<p style="color:#f59e0b">Too many inputs for truth table (>8).</p>'; return; }
+
+      const inputOrder = inputs.map(i=>i.id);
+      const combos = 1 << inputs.length;
+      let html = '<table style="width:100%; border-collapse:collapse; color:inherit;"><thead><tr>';
+      inputs.forEach(i=> html += `<th style="text-align:left; padding:6px; border-bottom:1px solid rgba(0,0,0,0.1)">${i.probeName || i.name}</th>`);
+      outputs.forEach(o=> html += `<th style="text-align:left; padding:6px; border-bottom:1px solid rgba(0,0,0,0.1)">${o.probeName || o.name}</th>`);
+      html += '</tr></thead><tbody>';
+      for(let k=0;k<combos;k++){
+        const vals = [];
+        for(let b=0;b<inputs.length;b++) vals.push((k >> (inputs.length-1-b)) & 1);
+        const outVals = evaluateOnClone(vals, inputOrder);
+        html += '<tr>';
+        vals.forEach(v=> html += `<td style="padding:4px">${v}</td>`);
+        outVals.forEach(v=> html += `<td style="padding:4px">${v}</td>`);
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // --- Toggle input ---
+    function toggleInput(id){ const comp = components.find(c=>c.id===id); if(!comp) return; comp.value = comp.value?0:1; const btn = document.getElementById(`${id}-switch`); if(btn){ btn.textContent = comp.value; btn.style.backgroundColor = comp.value? 'var(--success)':'var(--error)'; }
+      runSimulation(); }
+
+    // --- Selection & properties ---
+    function select(id){ document.querySelectorAll('.dropped-item').forEach(el=>el.classList.remove('selected')); const model = components.find(c=>c.id===id); if(!model) return; const el = document.getElementById(id); if(el) el.classList.add('selected'); updateProperties(model); }
+    function updateProperties(m){ const p = document.getElementById('properties-content'); const label = m.probeName ? ` ${m.probeName}` : ''; let html = `<h3>${m.name}${label} (${m.id})</h3><p><strong>Type:</strong> ${m.type}</p>`;
+      if(m.type==='input'){ html += `<p>Current: ${m.value}</p><button class="tool-btn" onclick="toggleInput('${m.id}')">Toggle</button>`; }
+      if(m.type==='gate'){ html += `<p>Output: ${m.outputs[0].value}</p><ul>`; m.inputs.forEach((inp,i)=>{ html+=`<li>A${i+1}: ${inp.connectedTo? 'Connected' : 'Unconnected (0)'} </li>` }); html+='</ul>'; }
+      if(m.type==='output'){ html += `<p>Value: ${m.inputs[0] ? m.inputs[0].value : 0}</p>`; }
+      html += `<hr><button class="close-workspace" style="width:100%" onclick="deleteComponent('${m.id}')">Delete</button>`; p.innerHTML = html; }
+
+    function deleteComponent(id){ 
+      const el = document.getElementById(id); if(el) el.remove(); 
+      components.forEach(c=>{ c.inputs && c.inputs.forEach(inp=>{ if(inp.connectedTo && inp.connectedTo.componentId===id) inp.connectedTo=null }); c.outputs && c.outputs.forEach(out=>{ out.connectedTo = out.connectedTo.filter(x=>x.componentId!==id) }); });
+      components = components.filter(c=>c.id!==id); 
+      document.getElementById('properties-content').innerHTML = '<p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to view properties</p>'; 
+      drawWires(); runSimulation(); 
+      if(components.length===0) document.getElementById('empty-state').style.display='flex';
+      assignProbeNames();
+    }
+
+    // --- Toolbar functions ---
+    function setTool(t){ tool=t; document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active')); document.querySelectorAll('.tool-btn').forEach(b=>{ if(b.textContent.toLowerCase().includes(t)) b.classList.add('active'); }); clearPending(); }
+    function clearCircuit(){ 
+      if(confirm('Clear entire canvas?')){ 
+        document.getElementById('canvas').innerHTML = ''; // Clear all dropped items
+        // Re-add the empty state
+        const emptyState = document.createElement('div');
+        emptyState.id = 'empty-state';
+        emptyState.className = 'empty-state';
+        emptyState.style.display = 'flex';
+        emptyState.style.flexDirection = 'column';
+        emptyState.style.alignItems = 'center';
+        emptyState.style.justifyContent = 'center';
+        emptyState.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 100px; height: 100px; opacity: 0.3; margin-bottom: 1rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg><p>Drag components here to start building</p>`;
+        document.getElementById('canvas').appendChild(emptyState);
+
+        components = []; 
+        wires = [];
+        idCounter=0; 
+        lastExport=null; 
+        document.getElementById('properties-content').innerHTML = '<p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to view properties</p>'; 
+        document.getElementById('truth-table').innerHTML = '';
+        document.getElementById('circuit-warnings').innerHTML = '';
+      }
+    }
+
+    // --- Export/Import ---
+    function exportCircuitToClipboard(){ const payload = JSON.stringify(components); lastExport = payload; navigator.clipboard.writeText(payload).then(()=> alert('Circuit JSON copied to clipboard.')); }
+    function copyLastExport(){ if(lastExport){ navigator.clipboard.writeText(lastExport).then(()=> alert('Last exported JSON copied.')); } else alert('No export available yet'); }
+
+    // --- AR Helpers ---
+    function promptSendToUnity(){ if(!lastExport){ exportCircuitToClipboard(); }
+      const url = prompt('Enter HTTP endpoint for Unity to receive JSON (example: http://192.168.1.50:5000/receive):'); if(!url) return; fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:lastExport||JSON.stringify(components)}).then(r=>{ if(r.ok) alert('Sent to Unity endpoint'); else alert('Failed to send: '+r.status); }).catch(err=> alert('Network error: '+err.message)); }
+
+    // --- Startup ---
+    document.addEventListener('DOMContentLoaded', ()=>{ setupComponentsPanel(); setTool('select'); });
+
+    // --- AR modal functions ---
+    function openARModal(){ document.getElementById('arModal').classList.add('active'); }
+    function closeARModal(){ document.getElementById('arModal').classList.remove('active'); }
+
+    // --- Probe naming ---
+    function assignProbeNames(){
+      const letters = (n)=>Array.from({length:n},(_,i)=>String.fromCharCode(65 + i));
+      const inputs = components.filter(c=>c.type==='input');
+      const gates = components.filter(c=>c.type==='gate');
+      const outputs = components.filter(c=>c.type==='output');
+      inputs.forEach((c,i)=> c.probeName = letters(inputs.length)[i]);
+      gates.forEach((c,i)=> c.probeName = letters(gates.length)[i]);
+      outputs.forEach((c,i)=> c.probeName = letters(outputs.length)[i]);
+    }
+  </script>
+</body>
+</html>
