@@ -1,0 +1,34 @@
+# ── Python ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual Environment ──────────────────────────
+venv/
+env/
+.venv/
+.env
+
+# ── IDE / Editor ─────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Database ─────────────────────────────────────
+*.db
+database/app.db
+
+# ── OS Files ─────────────────────────────────────
+*.log
+*.tmp
+*.bak

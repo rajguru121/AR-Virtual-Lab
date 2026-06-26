@@ -1,0 +1,3514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AR/VR Lab — Combinational & Sequential Workspace</title>
+  <link rel="stylesheet" href="arvr-lab-platform.css">
+  <style>
+    /* Premium visual overrides and layout styles */
+    .workspace-viewport {
+      position: relative;
+      overflow: hidden;
+      outline: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      user-select: none;
+      cursor: default;
+    }
+
+    .workspace-canvas {
+      position: absolute;
+      width: 10000px;
+      height: 10000px;
+      transform-origin: 0 0;
+      left: 0;
+      top: 0;
+      background-size: 20px 20px;
+      background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    }
+
+    .dropped-item {
+      position: absolute;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      min-width: 90px;
+      text-align: center;
+      cursor: grab;
+      box-shadow: var(--shadow);
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 10;
+      transform-origin: center center;
+    }
+
+    .dropped-item:active {
+      cursor: grabbing;
+    }
+
+    .dropped-item.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18), var(--shadow-md);
+    }
+
+    .pin {
+      display: inline-block;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .input-pin {
+      background: rgba(239, 68, 68, 0.06);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    .input-pin:hover {
+      background: rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .input-pin.floating-warning {
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
+      border-color: #f59e0b;
+    }
+
+    .output-pin {
+      background: rgba(16, 185, 129, 0.06);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .output-pin:hover {
+      background: rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .input-switch {
+      padding: 5px 12px;
+      border-radius: 5px;
+      border: none;
+      background: var(--error);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-width: 40px;
+    }
+
+    .output-led {
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #4b5563;
+      color: #fff;
+    }
+
+    .output-led.active {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+      border-color: #10b981;
+    }
+
+    .wire-glow {
+      filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.6));
+    }
+
+    /* Helper overlay for hotkeys */
+    .help-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 10px;
+      pointer-events: none;
+      line-height: 1.5;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Config components inputs */
+    .config-control {
+      width: 100%;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+
+    /* Style overrides for DELD Module SPA integration */
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .properties-panel {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation header removed for DELD Module SPA integration -->
+  <main
+    style="padding:0; margin:0; max-width:100%; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+    <section id="deld-page"
+      style="flex: 1; display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; padding: 0 12px 12px 12px;">
+      <div class="workspace-header" style="margin-bottom: 8px; flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <button class="tool-btn" id="btn-select" onclick="setTool('select')">Select</button>
+          <button class="tool-btn" id="btn-connect" onclick="setTool('connect')">Connect</button>
+          <button class="tool-btn" onclick="undo()">Undo</button>
+          <button class="tool-btn" onclick="redo()">Redo</button>
+          <button class="tool-btn" onclick="duplicateSelected()">Duplicate</button>
+          <button class="tool-btn" onclick="clearCircuit()">Clear</button>
+          <button class="tool-btn" onclick="zoomIn()">Zoom +</button>
+          <button class="tool-btn" onclick="zoomOut()">Zoom -</button>
+          <button class="tool-btn" onclick="zoomReset()">100%</button>
+          <button class="tool-btn" onclick="exportCircuitToClipboard()">Export JSON</button>
+          <button class="tool-btn" onclick="saveCircuitToCloud()">Save to Cloud</button>
+          <label
+            style="font-size: 11px; font-weight: 600; color: var(--text2); display: flex; align-items: center; gap: 4px; margin-left: 6px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="grid-snap-toggle" checked style="cursor: pointer; accent-color: var(--accent);">
+            Snap Grid
+          </label>
+        </div>
+      </div>
+
+      <div class="drag-drop-container" style="flex: 1; grid-template-columns: 200px 1fr; min-height: 0; display: grid;">
+        <!-- Components Sidebar -->
+        <div class="components-panel">
+          <div class="panel-title">Component Palette</div>
+          <div id="components-list" style="padding-bottom: 20px;"></div>
+        </div>
+
+        <!-- Viewport Workspace -->
+        <div id="canvas-viewport" class="workspace-viewport" style="height: 100%; min-height: 0; position: relative;"
+          tabindex="0">
+          <div id="canvas-container" class="workspace-canvas">
+            <div id="empty-state" class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                style="width: 80px; height: 80px; opacity: 0.25; margin-bottom: 1rem;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+              </svg>
+              <p style="font-size:0.85rem;">Drag components here or click them to start building</p>
+            </div>
+          </div>
+
+          <!-- Hotkeys helpful overlay -->
+          <div class="help-overlay">
+            <strong>Hotkeys:</strong><br>
+            Space + Drag: Pan Canvas | Scroll: Zoom<br>
+            Ctrl+C: Copy | Ctrl+V: Paste | Ctrl+D: Duplicate<br>
+            R: Rotate selected | Backspace/Delete: Delete selected<br>
+            Ctrl+Z: Undo | Ctrl+Y: Redo
+          </div>
+        </div>
+
+        <!-- Properties Panel -->
+        <div class="properties-panel">
+          <div class="panel-title">Properties Panel</div>
+          <div id="circuit-warnings" style="color:#f59e0b; margin:6px 0; font-weight:700; font-size:10px;"></div>
+          <div id="properties-content">
+            <p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to configure properties</p>
+          </div>
+
+          <div class="panel-title" style="margin-top:16px;">Combinational Truth Table</div>
+          <div id="truth-table"
+            style="max-height:140px; overflow:auto; font-family:monospace; background:rgba(255,255,255,0.03); padding:6px; border-radius:6px; color:#0f172a; font-size:10px;">
+          </div>
+
+          <div id="cpp-code-container" style="margin-top:16px; display:none;">
+            <div class="panel-title" style="font-size: 11px; margin-bottom: 6px;">Generated C++ Code</div>
+            <pre id="cpp-code-block"
+              style="max-height:140px; overflow:auto; font-family:monospace; background:rgba(255,255,255,0.03); padding:6px; border-radius:6px; color:#0f172a; font-size:10px; margin-bottom:8px; white-space:pre-wrap;"></pre>
+            <div style="display:flex; gap:6px;">
+              <button class="tool-btn" style="flex:1; font-size:10px; padding:4px;" onclick="copyCPPCode()">Copy
+                Code</button>
+              <button class="tool-btn" style="flex:1; font-size:10px; padding:4px;"
+                onclick="downloadCPPCode()">Download</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- AR Modal & Footer removed for integrated SPA view -->
+
+  <script>
+    // --- Detailed Component Definitions ---
+    const moduleComponents = [
+      // Wiring & Labels
+      { name: 'Junction', type: 'junction', icon: '•', inputs: 1, outputs: 3 },
+      { name: 'Label', type: 'label', icon: 'TEXT', inputs: 0, outputs: 0, text: 'Label', fontSize: 14 },
+
+      // Inputs
+      { name: 'Toggle Switch', type: 'input', icon: 'SWITCH', value: 0, outputs: 1, outputNames: ['Q'] },
+      { name: 'Push Button', type: 'input', icon: 'BUTTON', value: 0, outputs: 1, outputNames: ['Q'] },
+      { name: 'Clock', type: 'input', icon: 'CLOCK', value: 0, outputs: 1, outputNames: ['Q'], frequency: 1 },
+      { name: 'VCC', type: 'input', icon: 'VCC', value: 1, outputs: 1, outputNames: ['1'] },
+      { name: 'GND', type: 'input', icon: 'GND', value: 0, outputs: 1, outputNames: ['0'] },
+
+      // Outputs
+      { name: 'LED', type: 'output', icon: 'LED', inputs: 1, inputNames: ['A'] },
+      { name: 'Logic Probe', type: 'output', icon: 'PROBE', inputs: 1, inputNames: ['A'] },
+      { name: 'Seven Segment Display', type: 'output', icon: '7-SEG', inputs: 4, inputNames: ['A3', 'A2', 'A1', 'A0'] },
+      { name: 'Hex Display', type: 'output', icon: 'HEX', inputs: 4, inputNames: ['A3', 'A2', 'A1', 'A0'] },
+
+      // Logic Gates (Fixed and Configurable Inputs)
+      { name: 'AND Gate', type: 'gate', icon: 'AND', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'OR Gate', type: 'gate', icon: 'OR', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'NOT Gate', type: 'gate', icon: 'NOT', inputs: 1, inputNames: ['A'], outputs: 1, outputNames: ['Q'] },
+      { name: 'NAND Gate', type: 'gate', icon: 'NAND', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'NOR Gate', type: 'gate', icon: 'NOR', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'XOR Gate', type: 'gate', icon: 'XOR', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'XNOR Gate', type: 'gate', icon: 'XNOR', inputs: 2, outputs: 1, outputNames: ['Q'] },
+      { name: 'BUFFER', type: 'gate', icon: 'BUFFER', inputs: 1, inputNames: ['A'], outputs: 1, outputNames: ['Q'] },
+      { name: 'Tri-State Buffer', type: 'gate', icon: 'TRI-BUF', inputs: 2, inputNames: ['A', 'EN'], outputs: 1, outputNames: ['Y'] },
+
+      // Sequential Flip-Flops & Latches
+      { name: 'SR Latch', type: 'sequential', icon: 'SR LATCH', inputs: 2, inputNames: ['S', 'R'], outputs: 2, outputNames: ['Q', 'QN'] },
+      { name: 'SR Flip-Flop', type: 'sequential', icon: 'SR FF', inputs: 3, inputNames: ['S', 'R', 'CLK'], outputs: 2, outputNames: ['Q', 'QN'] },
+      { name: 'D Flip-Flop', type: 'sequential', icon: 'D FF', inputs: 2, inputNames: ['D', 'CLK'], outputs: 2, outputNames: ['Q', 'QN'] },
+      { name: 'JK Flip-Flop', type: 'sequential', icon: 'JK FF', inputs: 3, inputNames: ['J', 'K', 'CLK'], outputs: 2, outputNames: ['Q', 'QN'] },
+      { name: 'T Flip-Flop', type: 'sequential', icon: 'T FF', inputs: 2, inputNames: ['T', 'CLK'], outputs: 2, outputNames: ['Q', 'QN'] },
+
+      // Registers
+      { name: '4-bit Register', type: 'sequential', icon: 'REG 4B', inputs: 7, inputNames: ['D3', 'D2', 'D1', 'D0', 'CLK', 'RST', 'EN'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: '8-bit Register', type: 'sequential', icon: 'REG 8B', inputs: 11, inputNames: ['D7', 'D6', 'D5', 'D4', 'D3', 'D2', 'D1', 'D0', 'CLK', 'RST', 'EN'], outputs: 8, outputNames: ['Q7', 'Q6', 'Q5', 'Q4', 'Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Universal Shift Register', type: 'sequential', icon: 'USR 4B', inputs: 10, inputNames: ['S1', 'S0', 'SR_IN', 'SL_IN', 'D3', 'D2', 'D1', 'D0', 'CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+
+      // Shift Registers
+      { name: 'SISO Shift Register', type: 'sequential', icon: 'SISO SR', inputs: 3, inputNames: ['SER', 'CLK', 'RST'], outputs: 1, outputNames: ['SOUT'] },
+      { name: 'SIPO Shift Register', type: 'sequential', icon: 'SIPO SR', inputs: 3, inputNames: ['SER', 'CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'PISO Shift Register', type: 'sequential', icon: 'PISO SR', inputs: 7, inputNames: ['D3', 'D2', 'D1', 'D0', 'LOAD', 'CLK', 'RST'], outputs: 1, outputNames: ['SOUT'] },
+      { name: 'PIPO Shift Register', type: 'sequential', icon: 'PIPO SR', inputs: 6, inputNames: ['D3', 'D2', 'D1', 'D0', 'CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+
+      // Counters
+      { name: 'Ripple Counter', type: 'sequential', icon: 'RIP-CNTR', inputs: 2, inputNames: ['CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Synchronous Counter', type: 'sequential', icon: 'SYNC-CNTR', inputs: 3, inputNames: ['CLK', 'RST', 'EN'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Up Counter', type: 'sequential', icon: 'UP-CNTR', inputs: 2, inputNames: ['CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Down Counter', type: 'sequential', icon: 'DN-CNTR', inputs: 2, inputNames: ['CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Up/Down Counter', type: 'sequential', icon: 'UD-CNTR', inputs: 3, inputNames: ['CLK', 'RST', 'UP_DN'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Ring Counter', type: 'sequential', icon: 'RING-CNTR', inputs: 2, inputNames: ['CLK', 'INIT'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+      { name: 'Johnson Counter', type: 'sequential', icon: 'JHN-CNTR', inputs: 2, inputNames: ['CLK', 'RST'], outputs: 4, outputNames: ['Q3', 'Q2', 'Q1', 'Q0'] },
+
+      // Configurable Multiplexers / Demultiplexers & Other Blocks
+      { name: 'Configurable Multiplexer', type: 'gate', icon: 'MUX', inputs: 3, outputs: 1, selectBits: 1 },
+      { name: 'Configurable Demultiplexer', type: 'gate', icon: 'DEMUX', inputs: 2, outputs: 2, selectBits: 1 },
+      { name: '8:3 Encoder', type: 'gate', icon: 'ENCODER', inputs: 8, outputs: 3, inputNames: ['D7', 'D6', 'D5', 'D4', 'D3', 'D2', 'D1', 'D0'], outputNames: ['Y2', 'Y1', 'Y0'] },
+      { name: '8:3 Priority Encoder', type: 'gate', icon: 'PRI-ENC', inputs: 8, outputs: 4, inputNames: ['D7', 'D6', 'D5', 'D4', 'D3', 'D2', 'D1', 'D0'], outputNames: ['Y2', 'Y1', 'Y0', 'V'] },
+      { name: '3:8 Decoder', type: 'gate', icon: 'DECODER', inputs: 3, outputs: 8, inputNames: ['A', 'B', 'C'], outputNames: ['Y7', 'Y6', 'Y5', 'Y4', 'Y3', 'Y2', 'Y1', 'Y0'] },
+      { name: '2-bit Comparator', type: 'gate', icon: '2B-COMP', inputs: 4, outputs: 3, inputNames: ['A1', 'A0', 'B1', 'B0'], outputNames: ['A_EQ_B', 'A_GT_B', 'A_LT_B'] },
+      { name: '4-bit Magnitude Comparator', type: 'gate', icon: 'MAG-COMP', inputs: 8, outputs: 3, inputNames: ['A3', 'A2', 'A1', 'A0', 'B3', 'B2', 'B1', 'B0'], outputNames: ['A_EQ_B', 'A_GT_B', 'A_LT_B'] }
+    ];
+
+    // --- State Variables ---
+    let components = [];
+    let wires = [];
+    let idCounter = 0;
+    let tool = 'select';
+    let pending = null;
+    let lastExport = null;
+    let selectedIds = [];
+    let clipboard = null;
+
+    // Zoom and Pan State
+    let panX = 0;
+    let panY = 0;
+    let zoom = 1.0;
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+    let spacePressed = false;
+
+    // Selection Marquee State
+    let isSelecting = false;
+    let selStartX = 0;
+    let selStartY = 0;
+
+    // Undo/Redo Stacks
+    const undoStack = [];
+    const redoStack = [];
+
+    // Clock simulation parameters
+    let simulationTickInterval = null;
+    let clockTickCounter = 0;
+    let isSimulationTickActive = true;
+    const SIMULATION_TICK_MS = 50;
+
+    let generatedCPPCode = '';
+
+    // --- Setup Components Sidebar with Headings ---
+    function setupComponentsPanel() {
+      const list = document.getElementById('components-list');
+      list.innerHTML = '';
+
+      const categories = {
+        'Wiring & Labels': ['Junction', 'Label'],
+        'Inputs': ['Toggle Switch', 'Push Button', 'Clock', 'VCC', 'GND'],
+        'Outputs': ['LED', 'Logic Probe', 'Seven Segment Display', 'Hex Display'],
+        'Logic Gates': ['AND Gate', 'OR Gate', 'NOT Gate', 'NAND Gate', 'NOR Gate', 'XOR Gate', 'XNOR Gate', 'BUFFER', 'Tri-State Buffer'],
+        'Sequential Flip-Flops': ['SR Latch', 'SR Flip-Flop', 'JK Flip-Flop', 'D Flip-Flop', 'T Flip-Flop'],
+        'Registers': ['4-bit Register', '8-bit Register', 'Universal Shift Register'],
+        'Shift Registers': ['SISO Shift Register', 'SIPO Shift Register', 'PISO Shift Register', 'PIPO Shift Register'],
+        'Counters': ['Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter', 'Ring Counter', 'Johnson Counter'],
+        'Arithmetic/Decoders': ['Configurable Multiplexer', 'Configurable Demultiplexer', '8:3 Encoder', '8:3 Priority Encoder', '3:8 Decoder', '2-bit Comparator', '4-bit Magnitude Comparator']
+      };
+
+      for (const cat in categories) {
+        const header = document.createElement('div');
+        header.className = 'panel-title';
+        header.style.marginTop = '12px';
+        header.style.marginBottom = '4px';
+        header.style.fontSize = '9px';
+        header.style.letterSpacing = '0.05em';
+        header.style.borderBottom = '1px solid rgba(0,0,0,0.06)';
+        header.style.paddingBottom = '2px';
+        header.textContent = cat;
+        list.appendChild(header);
+
+        categories[cat].forEach(name => {
+          const c = moduleComponents.find(item => item.name === name);
+          if (!c) return;
+
+          const el = document.createElement('div');
+          el.className = 'draggable-component';
+          el.textContent = c.name;
+          el.draggable = true;
+          el.dataset.name = c.name;
+          el.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('name', c.name);
+          });
+          el.addEventListener('click', () => {
+            // Place in viewport center
+            const coords = getLocalCoords(window.innerWidth / 2, window.innerHeight / 2);
+            createAt(coords.x, coords.y, c.name);
+          });
+          list.appendChild(el);
+        });
+      }
+    }
+
+    // --- Coordinate conversions ---
+    function getLocalCoords(clientX, clientY) {
+      const viewport = document.getElementById('canvas-viewport');
+      const rect = viewport.getBoundingClientRect();
+      const x = (clientX - rect.left - panX) / zoom;
+      const y = (clientY - rect.top - panY) / zoom;
+      return { x, y };
+    }
+
+    // --- Component Instantiation ---
+    function createAt(x, y, name) {
+      document.getElementById('empty-state').style.display = 'none';
+      const def = moduleComponents.find(m => m.name === name);
+      if (!def) return;
+
+      pushUndo();
+
+      idCounter++;
+      const id = 'c' + idCounter;
+
+      const snapEnabled = document.getElementById('grid-snap-toggle') ? document.getElementById('grid-snap-toggle').checked : true;
+      let posX = snapEnabled ? Math.round(x / 20) * 20 : x;
+      let posY = snapEnabled ? Math.round(y / 20) * 20 : y;
+
+      const model = {
+        id,
+        name: `${def.name} ${idCounter}`,
+        baseName: def.name,
+        type: def.type,
+        x: posX,
+        y: posY,
+        rotation: 0,
+        inputs: [],
+        outputs: [],
+        value: def.value || 0,
+        frequency: def.frequency || 1,
+        selectBits: def.selectBits || 1,
+        text: def.text || 'Label',
+        fontSize: def.fontSize || 14,
+        state: { Q: 0, prevClk: 0, count: 0, regVal: [0, 0, 0, 0, 0, 0, 0, 0] }
+      };
+
+      // Set input/output pins
+      let inputCount = def.inputs || 0;
+      let outputCount = def.outputs || 0;
+
+      // Handle Multiplexer / Demultiplexer defaults
+      if (def.name === 'Configurable Multiplexer') {
+        inputCount = (1 << model.selectBits) + model.selectBits;
+      } else if (def.name === 'Configurable Demultiplexer') {
+        inputCount = 1 + model.selectBits;
+        outputCount = 1 << model.selectBits;
+      }
+
+      for (let i = 0; i < inputCount; i++) {
+        model.inputs.push({ pinId: `${id}-in-${i}`, connectedTo: null, value: 0 });
+      }
+      for (let i = 0; i < outputCount; i++) {
+        model.outputs.push({ pinId: `${id}-out-${i}`, connectedTo: [], value: def.type === 'input' ? model.value : 0 });
+      }
+
+      renderComponentToDOM(model);
+      clearSelections();
+      select(id);
+
+      drawWires();
+      runSimulation();
+    }
+
+    // --- DOM Renderer for Components ---
+    function renderComponentToDOM(model) {
+      document.getElementById('empty-state').style.display = 'none';
+      const def = moduleComponents.find(m => m.name === model.baseName);
+      if (!def) return;
+
+      const id = model.id;
+      const dom = document.createElement('div');
+      dom.className = 'dropped-item';
+      dom.id = id;
+      dom.style.left = model.x + 'px';
+      dom.style.top = model.y + 'px';
+      dom.style.transform = `rotate(${model.rotation}deg)`;
+
+      let inner = '';
+
+      if (def.type === 'input') {
+        if (def.name === 'Toggle Switch') {
+          inner = `<button id="${id}-switch" class="input-switch">${model.value}</button>
+                   <div style="margin-top:6px; display:flex; justify-content:center;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">Q</div>
+                   </div>`;
+        } else if (def.name === 'Push Button') {
+          inner = `<button id="${id}-btn" class="input-switch" style="background:#3b82f6;">0</button>
+                   <div style="margin-top:6px; display:flex; justify-content:center;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">Q</div>
+                   </div>`;
+        } else if (def.name === 'Clock') {
+          inner = `<div style="padding:4px; font-weight:700; color:var(--accent);">CLK</div>
+                   <div style="font-size:9px; color:var(--text2); margin-bottom:4px;" id="${id}-freq-lbl">${model.frequency}Hz</div>
+                   <div style="margin-top:4px; display:flex; justify-content:center;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">Q</div>
+                   </div>`;
+        } else if (def.name === 'VCC') {
+          inner = `<div style="padding:4px; font-weight:700; color:#10b981;">VCC</div>
+                   <div style="margin-top:4px; display:flex; justify-content:center;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">1</div>
+                   </div>`;
+        } else if (def.name === 'GND') {
+          inner = `<div style="padding:4px; font-weight:700; color:#64748b;">GND</div>
+                   <div style="margin-top:4px; display:flex; justify-content:center;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0">0</div>
+                   </div>`;
+        }
+      } else if (def.type === 'output') {
+        if (def.name === 'LED') {
+          inner = `<div class="output-led" id="${id}-led-indicator">LED</div>
+                   <div style="margin-top:6px; display:flex; justify-content:center;">
+                     <div id="${id}-in-0" class="pin input-pin" data-pin-type="input" data-index="0">A</div>
+                   </div>`;
+        } else if (def.name === 'Logic Probe') {
+          inner = `<div class="output-led" id="${id}-probe-indicator" style="font-family:monospace; font-size:1.15rem; min-width:32px;">Z</div>
+                   <div style="margin-top:6px; display:flex; justify-content:center;">
+                     <div id="${id}-in-0" class="pin input-pin" data-pin-type="input" data-index="0">A</div>
+                   </div>`;
+        } else if (def.name === 'Seven Segment Display' || def.name === 'Hex Display') {
+          inner = `<div style="display:flex; justify-content:center; padding: 2px;">
+                     <div style="border: 2px solid var(--border); background: #0f172a; padding: 4px; border-radius: 4px; font-family: monospace; font-size: 1.4rem; color: #ef4444; text-shadow: 0 0 8px #ef4444; width: 36px; height: 46px; text-align: center; line-height: 34px;" id="${id}-seg-display">-</div>
+                   </div>
+                   <div style="display:flex; justify-content:space-around; margin-top:4px; font-size:8px; font-weight:bold;">
+                     <div id="${id}-in-3" class="pin input-pin" data-pin-type="input" data-index="3">A3</div>
+                     <div id="${id}-in-2" class="pin input-pin" data-pin-type="input" data-index="2">A2</div>
+                     <div id="${id}-in-1" class="pin input-pin" data-pin-type="input" data-index="1">A1</div>
+                     <div id="${id}-in-0" class="pin input-pin" data-pin-type="input" data-index="0">A0</div>
+                   </div>`;
+        }
+      } else if (def.name === 'Label') {
+        inner = `<div style="padding:4px;"><input type="text" value="${model.text}" style="background:transparent; border:none; color:inherit; font-size:${model.fontSize}px; font-weight:700; text-align:center; width:120px; outline:none;" id="${id}-lbl-input"/></div>`;
+      } else if (def.name === 'Junction') {
+        inner = `<div style="width:10px; height:10px; border-radius:50%; background:var(--text); margin:2px auto;" id="${id}-junction-dot"></div>
+                 <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                   <div id="${id}-in-0" class="pin input-pin" data-pin-type="input" data-index="0" style="padding:1px 3px; font-size:7px;">IN</div>
+                   <div style="display:flex; flex-direction:column; gap:2px;">
+                     <div id="${id}-out-0" class="pin output-pin" data-pin-type="output" data-index="0" style="padding:1px 3px; font-size:7px;">Q0</div>
+                     <div id="${id}-out-1" class="pin output-pin" data-pin-type="output" data-index="1" style="padding:1px 3px; font-size:7px;">Q1</div>
+                     <div id="${id}-out-2" class="pin output-pin" data-pin-type="output" data-index="2" style="padding:1px 3px; font-size:7px;">Q2</div>
+                   </div>
+                 </div>`;
+      } else {
+        inner = `<div style="padding:4px; font-weight:700; font-size:0.75rem">${def.icon}
+                   <div style="font-size:9px; font-weight:500; color:var(--text2); margin-top:2px;">${model.name}</div>
+                 </div>`;
+        inner += '<div style="display:flex; justify-content:space-between; align-items:center; padding: 4px; gap: 10px; min-width: 90px;">';
+
+        // Inputs
+        inner += '<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">';
+        for (let i = 0; i < model.inputs.length; i++) {
+          const pinLabel = def.inputNames ? (def.inputNames[i] || `A${i + 1}`) : `A${i + 1}`;
+          inner += `<div id="${id}-in-${i}" class="pin input-pin" data-pin-type="input" data-index="${i}">${pinLabel}</div>`;
+        }
+        inner += '</div>';
+
+        // Outputs
+        inner += '<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">';
+        for (let i = 0; i < model.outputs.length; i++) {
+          const pinLabel = def.outputNames ? (def.outputNames[i] || `Q${i + 1}`) : `Q${i + 1}`;
+          inner += `<div id="${id}-out-${i}" class="pin output-pin" data-pin-type="output" data-index="${i}">${pinLabel}</div>`;
+        }
+        inner += '</div>';
+
+        inner += '</div>';
+      }
+
+      dom.innerHTML = inner;
+      document.getElementById('canvas-container').appendChild(dom);
+
+      // DOM event wiring
+      dom.querySelectorAll('.pin').forEach(pin => pin.addEventListener('click', onPinClick));
+
+      const sw = dom.querySelector('.input-switch');
+      if (sw) {
+        if (def.name === 'Toggle Switch') {
+          sw.addEventListener('click', () => toggleInput(id));
+        } else if (def.name === 'Push Button') {
+          sw.addEventListener('mousedown', () => setPushButton(id, 1));
+          sw.addEventListener('mouseup', () => setPushButton(id, 0));
+          sw.addEventListener('mouseleave', () => setPushButton(id, 0));
+          sw.addEventListener('touchstart', (e) => { e.preventDefault(); setPushButton(id, 1); });
+          sw.addEventListener('touchend', (e) => { e.preventDefault(); setPushButton(id, 0); });
+        }
+      }
+
+      const lblInput = dom.querySelector(`#${id}-lbl-input`);
+      if (lblInput) {
+        lblInput.addEventListener('change', e => {
+          model.text = e.target.value;
+        });
+      }
+
+      dom.addEventListener('click', e => {
+        if (e.target.closest('.pin') || e.target.closest('.input-switch') || e.target.closest('input')) return;
+        select(id, e.ctrlKey);
+      });
+
+      makeDraggable(dom);
+      if (!components.includes(model)) {
+        components.push(model);
+      }
+    }
+
+    // --- Drag components smoothly ---
+    function makeDraggable(el) {
+      el.onmousedown = function (e) {
+        if (e.target.closest('.pin') || e.target.closest('.input-switch') || e.target.closest('input')) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origLeft = el.offsetLeft;
+        const origTop = el.offsetTop;
+
+        let animationFrameId = null;
+
+        // If clicking a component that is NOT selected, select it exclusively
+        if (!selectedIds.includes(el.id)) {
+          clearSelections();
+          select(el.id);
+        }
+
+        // Keep track of original positions for all selected elements
+        const activeMoves = [];
+        selectedIds.forEach(id => {
+          const domItem = document.getElementById(id);
+          if (domItem) {
+            activeMoves.push({
+              id,
+              domItem,
+              startL: domItem.offsetLeft,
+              startT: domItem.offsetTop
+            });
+          }
+        });
+
+        function moveHandler(ev) {
+          const dx = (ev.clientX - startX) / zoom;
+          const dy = (ev.clientY - startY) / zoom;
+
+          activeMoves.forEach(m => {
+            let leftVal = m.startL + dx;
+            let topVal = m.startT + dy;
+
+            const snapEnabled = document.getElementById('grid-snap-toggle') ? document.getElementById('grid-snap-toggle').checked : true;
+            if (snapEnabled) {
+              leftVal = Math.round(leftVal / 20) * 20;
+              topVal = Math.round(topVal / 20) * 20;
+            }
+
+            m.domItem.style.left = leftVal + 'px';
+            m.domItem.style.top = topVal + 'px';
+
+            const model = components.find(c => c.id === m.id);
+            if (model) {
+              model.x = leftVal;
+              model.y = topVal;
+            }
+          });
+
+          if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(() => {
+              drawWires();
+              animationFrameId = null;
+            });
+          }
+        }
+
+        function upHandler() {
+          document.removeEventListener('mousemove', moveHandler);
+          document.removeEventListener('mouseup', upHandler);
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+          pushUndo();
+          drawWires();
+          runSimulation();
+        }
+
+        document.addEventListener('mousemove', moveHandler);
+        document.addEventListener('mouseup', upHandler);
+      };
+    }
+
+    // --- Pin connections logic ---
+    function onPinClick(e) {
+      e.stopPropagation();
+      const el = e.currentTarget;
+      const pinType = el.dataset.pinType;
+      const index = Number(el.dataset.index);
+      const compId = el.closest('.dropped-item').id;
+
+      if (tool !== 'connect') {
+        select(compId);
+        return;
+      }
+
+      if (!pending) {
+        pending = { compId, pinType, index, pinElId: el.id };
+        el.style.boxShadow = '0 0 0 4px rgba(245,158,11,0.4)';
+      } else {
+        const a = pending;
+        const b = { compId, pinType, index, pinElId: el.id };
+        const compA = components.find(c => c.id === a.compId);
+        const compB = components.find(c => c.id === b.compId);
+
+        let sourceComp, destComp, sourcePinObj, destPinObj;
+        if (a.pinType === 'output' && b.pinType === 'input') {
+          sourceComp = compA; destComp = compB;
+          sourcePinObj = sourceComp.outputs[a.index];
+          destPinObj = destComp.inputs[b.index];
+        } else if (a.pinType === 'input' && b.pinType === 'output') {
+          sourceComp = compB; destComp = compA;
+          sourcePinObj = sourceComp.outputs[b.index];
+          destPinObj = destComp.inputs[a.index];
+        } else {
+          alert('Invalid Connection: Connect an output pin to an input pin.');
+          clearPending();
+          return;
+        }
+
+        if (!sourcePinObj || !destPinObj) {
+          clearPending();
+          return;
+        }
+        if (destPinObj.connectedTo) {
+          alert('This input pin is already connected.');
+          clearPending();
+          return;
+        }
+
+        pushUndo();
+
+        destPinObj.connectedTo = { componentId: sourceComp.id, outputIndex: sourceComp.outputs.indexOf(sourcePinObj) };
+        sourcePinObj.connectedTo.push({ componentId: destComp.id, inputIndex: destComp.inputs.indexOf(destPinObj) });
+        wires.push({ from: { compId: sourceComp.id, pinId: sourcePinObj.pinId }, to: { compId: destComp.id, pinId: destPinObj.pinId } });
+
+        clearPending();
+        drawWires();
+        runSimulation();
+      }
+    }
+
+    function clearPending() {
+      if (!pending) return;
+      const pinEl = document.getElementById(pending.pinElId);
+      if (pinEl) pinEl.style.boxShadow = 'none';
+      pending = null;
+    }
+
+    // --- Dynamic wire routing in SVG ---
+    function drawWires() {
+      const container = document.getElementById('canvas-container');
+      const old = container.querySelector('svg.drawing');
+      if (old) old.remove();
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.classList.add('drawing');
+      svg.style.position = 'absolute';
+      svg.style.left = '0';
+      svg.style.top = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+
+      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+      filter.setAttribute('id', 'glow');
+      filter.innerHTML = `<feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+                          <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>`;
+      defs.appendChild(filter);
+
+      const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+      marker.setAttribute('id', 'arrow');
+      marker.setAttribute('markerWidth', '6');
+      marker.setAttribute('markerHeight', '6');
+      marker.setAttribute('refX', '5');
+      marker.setAttribute('refY', '3');
+      marker.setAttribute('orient', 'auto');
+      marker.innerHTML = `<polygon points="0 0, 6 3, 0 6" fill="#8b5cf6"></polygon>`;
+      defs.appendChild(marker);
+      svg.appendChild(defs);
+
+      const canvasRect = container.getBoundingClientRect();
+
+      wires.forEach(w => {
+        const srcEl = document.getElementById(w.from.pinId);
+        const dstEl = document.getElementById(w.to.pinId);
+        if (!srcEl || !dstEl) return;
+
+        const s = srcEl.getBoundingClientRect();
+        const d = dstEl.getBoundingClientRect();
+
+        const x1 = (s.left + s.width / 2 - canvasRect.left) / zoom;
+        const y1 = (s.top + s.height / 2 - canvasRect.top) / zoom;
+        const x2 = (d.left + d.width / 2 - canvasRect.left) / zoom;
+        const y2 = (d.top + d.height / 2 - canvasRect.top) / zoom;
+
+        const dx = Math.abs(x2 - x1);
+        const controlDist = Math.max(dx * 0.45, 30);
+        const cp1x = x1 + controlDist;
+        const cp1y = y1;
+        const cp2x = x2 - controlDist;
+        const cp2y = y2;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`);
+
+        // Logical active path checks
+        const sourceComp = components.find(c => c.id === w.from.compId);
+        const sourcePinObj = sourceComp ? sourceComp.outputs.find(o => o.pinId === w.from.pinId) : null;
+        const active = sourcePinObj && sourcePinObj.value === 1;
+
+        if (active) {
+          path.setAttribute('stroke', '#10b981');
+          path.setAttribute('stroke-width', '4');
+          path.setAttribute('class', 'wire-glow');
+        } else {
+          path.setAttribute('stroke', '#64748b');
+          path.setAttribute('stroke-width', '2.5');
+        }
+        path.setAttribute('fill', 'none');
+        path.setAttribute('marker-end', 'url(#arrow)');
+
+        // Deletion events on wires
+        path.style.pointerEvents = 'stroke';
+        path.style.cursor = 'pointer';
+        path.addEventListener('mouseover', () => {
+          path.setAttribute('stroke', '#ef4444');
+          path.setAttribute('stroke-width', '5');
+        });
+        path.addEventListener('mouseout', () => {
+          if (active) {
+            path.setAttribute('stroke', '#10b981');
+            path.setAttribute('stroke-width', '4');
+          } else {
+            path.setAttribute('stroke', '#64748b');
+            path.setAttribute('stroke-width', '2.5');
+          }
+        });
+        path.addEventListener('click', (e) => {
+          e.stopPropagation();
+          pushUndo();
+          deleteWire(w);
+        });
+
+        svg.appendChild(path);
+      });
+
+      container.appendChild(svg);
+    }
+
+    function deleteWire(w) {
+      wires = wires.filter(wire => wire !== w);
+
+      const fromComp = components.find(c => c.id === w.from.compId);
+      const toComp = components.find(c => c.id === w.to.compId);
+      if (fromComp) {
+        fromComp.outputs.forEach(out => {
+          out.connectedTo = out.connectedTo.filter(conn => conn.componentId !== w.to.compId);
+        });
+      }
+      if (toComp) {
+        toComp.inputs.forEach(inp => {
+          if (inp.connectedTo && inp.connectedTo.componentId === w.from.compId) {
+            inp.connectedTo = null;
+          }
+        });
+      }
+
+      drawWires();
+      runSimulation();
+    }
+
+    // --- Clock simulation ticker ---
+    function startSimulationTicks() {
+      if (simulationTickInterval) clearInterval(simulationTickInterval);
+      simulationTickInterval = setInterval(() => {
+        if (!isSimulationTickActive) return;
+        clockTickCounter += SIMULATION_TICK_MS;
+
+        let changed = false;
+        components.forEach(c => {
+          if (c.baseName === 'Clock') {
+            const freq = c.frequency || 1;
+            const halfPeriod = 500 / freq;
+
+            const newValue = (clockTickCounter % (halfPeriod * 2) < halfPeriod) ? 1 : 0;
+            if (c.value !== newValue) {
+              c.value = newValue;
+              c.outputs[0].value = newValue;
+              changed = true;
+            }
+          }
+        });
+
+        if (changed) {
+          runSimulation();
+        }
+      }, SIMULATION_TICK_MS);
+    }
+
+    // --- Simulation engine ---
+    function runSimulation() {
+      assignProbeNames();
+
+      let changed = true;
+      let iter = 0;
+      const maxIter = 80;
+
+      while (changed && iter < maxIter) {
+        changed = false;
+        iter++;
+
+        // Inputs propagation
+        components.filter(c => c.type === 'input').forEach(i => {
+          let expected = i.value | 0;
+          if (i.baseName === 'VCC') expected = 1;
+          if (i.baseName === 'GND') expected = 0;
+
+          if (i.outputs[0].value !== expected) {
+            i.outputs[0].value = expected;
+            changed = true;
+          }
+
+          const sw = document.getElementById(`${i.id}-switch`);
+          if (sw) {
+            sw.textContent = expected;
+            sw.style.backgroundColor = expected === 1 ? 'var(--success)' : 'var(--error)';
+          }
+          const btn = document.getElementById(`${i.id}-btn`);
+          if (btn) {
+            btn.textContent = expected;
+            btn.style.backgroundColor = expected === 1 ? 'var(--success)' : '#3b82f6';
+          }
+        });
+
+        // Sequential state execution
+        components.filter(c => c.type === 'sequential').forEach(g => {
+          const inputs = g.inputs.map(inp => {
+            if (inp.connectedTo) {
+              const src = components.find(x => x.id === inp.connectedTo.componentId);
+              return src ? src.outputs[inp.connectedTo.outputIndex].value : 0;
+            }
+            return 0;
+          });
+
+          let outputs = [];
+
+          // Latch
+          if (g.baseName === 'SR Latch') {
+            const s = inputs[0], r = inputs[1];
+            if (s === 1 && r === 0) g.state.Q = 1;
+            else if (s === 0 && r === 1) g.state.Q = 0;
+            else if (s === 1 && r === 1) g.state.Q = 1;
+            outputs = [g.state.Q, (s === 1 && r === 1) ? 1 : (g.state.Q ? 0 : 1)];
+          } else {
+            // Clocked Flip-Flops & registers
+            let clkVal = 0;
+            if (g.baseName === 'SR Flip-Flop' || g.baseName === 'JK Flip-Flop') {
+              clkVal = inputs[2];
+            } else if (g.baseName === 'D Flip-Flop' || g.baseName === 'T Flip-Flop') {
+              clkVal = inputs[1];
+            } else if (g.baseName === '4-bit Register') {
+              clkVal = inputs[4];
+            } else if (g.baseName === '8-bit Register') {
+              clkVal = inputs[8];
+            } else if (g.baseName === 'Universal Shift Register') {
+              clkVal = inputs[8];
+            } else if (g.baseName === 'SISO Shift Register' || g.baseName === 'SIPO Shift Register') {
+              clkVal = inputs[1];
+            } else if (g.baseName === 'PISO Shift Register') {
+              clkVal = inputs[5];
+            } else if (g.baseName === 'PIPO Shift Register') {
+              clkVal = inputs[4];
+            } else if (g.baseName === 'Ripple Counter' || g.baseName === 'Up Counter' || g.baseName === 'Down Counter') {
+              clkVal = inputs[0];
+            } else if (g.baseName === 'Synchronous Counter' || g.baseName === 'Up/Down Counter') {
+              clkVal = inputs[0];
+            } else if (g.baseName === 'Ring Counter' || g.baseName === 'Johnson Counter') {
+              clkVal = inputs[0];
+            }
+
+            const rising = clkVal === 1 && g.state.prevClk === 0;
+            const falling = clkVal === 0 && g.state.prevClk === 1;
+
+            // Trigger action
+            if (rising || (g.baseName === 'Ripple Counter' && falling)) {
+              if (g.baseName === 'SR Flip-Flop') {
+                const s = inputs[0], r = inputs[1];
+                if (s === 1 && r === 0) g.state.Q = 1;
+                else if (s === 0 && r === 1) g.state.Q = 0;
+              } else if (g.baseName === 'JK Flip-Flop') {
+                const j = inputs[0], k = inputs[1];
+                if (j === 1 && k === 0) g.state.Q = 1;
+                else if (j === 0 && k === 1) g.state.Q = 0;
+                else if (j === 1 && k === 1) g.state.Q = g.state.Q ? 0 : 1;
+              } else if (g.baseName === 'D Flip-Flop') {
+                g.state.Q = inputs[0];
+              } else if (g.baseName === 'T Flip-Flop') {
+                if (inputs[0] === 1) g.state.Q = g.state.Q ? 0 : 1;
+              } else if (g.baseName === '4-bit Register') {
+                const en = inputs[6] === undefined ? 1 : inputs[6];
+                if (en === 1) {
+                  g.state.regVal = [inputs[0], inputs[1], inputs[2], inputs[3]];
+                }
+              } else if (g.baseName === '8-bit Register') {
+                const en = inputs[10] === undefined ? 1 : inputs[10];
+                if (en === 1) {
+                  g.state.regVal = [inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5], inputs[6], inputs[7]];
+                }
+              } else if (g.baseName === 'Universal Shift Register') {
+                const s1 = inputs[0], s0 = inputs[1];
+                const srIn = inputs[2], slIn = inputs[3];
+                if (s1 === 0 && s0 === 1) { // Shift Right
+                  g.state.regVal = [srIn, g.state.regVal[0], g.state.regVal[1], g.state.regVal[2]];
+                } else if (s1 === 1 && s0 === 0) { // Shift Left
+                  g.state.regVal = [g.state.regVal[1], g.state.regVal[2], g.state.regVal[3], slIn];
+                } else if (s1 === 1 && s0 === 1) { // Parallel Load
+                  g.state.regVal = [inputs[4], inputs[5], inputs[6], inputs[7]];
+                }
+              } else if (g.baseName === 'SISO Shift Register' || g.baseName === 'SIPO Shift Register') {
+                g.state.regVal = [inputs[0], g.state.regVal[0], g.state.regVal[1], g.state.regVal[2]];
+              } else if (g.baseName === 'PISO Shift Register') {
+                const load = inputs[4];
+                if (load === 0) {
+                  g.state.regVal = [inputs[0], inputs[1], inputs[2], inputs[3]];
+                } else {
+                  g.state.regVal = [0, g.state.regVal[0], g.state.regVal[1], g.state.regVal[2]];
+                }
+              } else if (g.baseName === 'PIPO Shift Register') {
+                g.state.regVal = [inputs[0], inputs[1], inputs[2], inputs[3]];
+              } else if (g.baseName === 'Ripple Counter' || g.baseName === 'Up Counter') {
+                g.state.count = (g.state.count + 1) % 16;
+              } else if (g.baseName === 'Down Counter') {
+                g.state.count = (g.state.count - 1 + 16) % 16;
+              } else if (g.baseName === 'Synchronous Counter') {
+                const en = inputs[2] === undefined ? 1 : inputs[2];
+                if (en === 1) g.state.count = (g.state.count + 1) % 16;
+              } else if (g.baseName === 'Up/Down Counter') {
+                const upDn = inputs[2];
+                if (upDn === 1) g.state.count = (g.state.count + 1) % 16;
+                else g.state.count = (g.state.count - 1 + 16) % 16;
+              } else if (g.baseName === 'Ring Counter') {
+                g.state.regVal = [g.state.regVal[3], g.state.regVal[0], g.state.regVal[1], g.state.regVal[2]];
+              } else if (g.baseName === 'Johnson Counter') {
+                const feedback = g.state.regVal[3] === 1 ? 0 : 1;
+                g.state.regVal = [feedback, g.state.regVal[0], g.state.regVal[1], g.state.regVal[2]];
+              }
+            }
+
+            // Asynchronous updates
+            if (g.baseName === '4-bit Register' && inputs[5] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if (g.baseName === '8-bit Register' && inputs[9] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0, 0, 0, 0, 0];
+            }
+            if (g.baseName === 'Universal Shift Register' && inputs[9] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if (g.baseName === 'SISO Shift Register' && inputs[2] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if (g.baseName === 'SIPO Shift Register' && inputs[2] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if (g.baseName === 'PISO Shift Register' && inputs[6] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if (g.baseName === 'PIPO Shift Register' && inputs[5] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+            if ((g.baseName === 'Ripple Counter' || g.baseName === 'Synchronous Counter' || g.baseName === 'Up Counter' || g.baseName === 'Down Counter' || g.baseName === 'Up/Down Counter') && inputs[1] === 1) {
+              g.state.count = 0;
+            }
+            if (g.baseName === 'Ring Counter' && inputs[1] === 1) { // INIT
+              g.state.regVal = [1, 0, 0, 0];
+            }
+            if (g.baseName === 'Johnson Counter' && inputs[1] === 1) { // RST
+              g.state.regVal = [0, 0, 0, 0];
+            }
+
+            g.state.prevClk = clkVal;
+
+            // Output mappings
+            if (['SR Flip-Flop', 'JK Flip-Flop', 'D Flip-Flop', 'T Flip-Flop'].includes(g.baseName)) {
+              outputs = [g.state.Q, g.state.Q ? 0 : 1];
+            } else if (g.baseName === '4-bit Register' || g.baseName === 'Universal Shift Register' || g.baseName === 'SIPO Shift Register' || g.baseName === 'PIPO Shift Register') {
+              outputs = g.state.regVal.slice(0, 4);
+            } else if (g.baseName === '8-bit Register') {
+              outputs = g.state.regVal.slice(0, 8);
+            } else if (g.baseName === 'SISO Shift Register' || g.baseName === 'PISO Shift Register') {
+              outputs = [g.state.regVal[3]];
+            } else if (['Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter'].includes(g.baseName)) {
+              outputs = [
+                (g.state.count >> 3) & 1, // Q3
+                (g.state.count >> 2) & 1, // Q2
+                (g.state.count >> 1) & 1, // Q1
+                (g.state.count >> 0) & 1  // Q0
+              ];
+            } else if (g.baseName === 'Ring Counter' || g.baseName === 'Johnson Counter') {
+              outputs = g.state.regVal.slice(0, 4);
+            }
+          }
+
+          outputs.forEach((val, idx) => {
+            if (g.outputs[idx] && g.outputs[idx].value !== val) {
+              g.outputs[idx].value = val;
+              changed = true;
+            }
+          });
+        });
+
+        // Gates evaluation
+        components.filter(c => c.type === 'gate' || c.type === 'junction').forEach(g => {
+          const inputs = g.inputs.map(inp => {
+            if (inp.connectedTo) {
+              const src = components.find(x => x.id === inp.connectedTo.componentId);
+              return src ? src.outputs[inp.connectedTo.outputIndex].value : 0;
+            }
+            return 0;
+          });
+
+          let outputs = [0];
+
+          if (g.baseName === 'AND Gate') {
+            outputs = [inputs.reduce((acc, val) => acc & val, 1)];
+          } else if (g.baseName === 'OR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc | val, 0)];
+          } else if (g.baseName === 'NOT Gate') {
+            outputs = [inputs[0] === 1 ? 0 : 1];
+          } else if (g.baseName === 'NAND Gate') {
+            outputs = [inputs.reduce((acc, val) => acc & val, 1) === 1 ? 0 : 1];
+          } else if (g.baseName === 'NOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc | val, 0) === 1 ? 0 : 1];
+          } else if (g.baseName === 'XOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc ^ val, 0)];
+          } else if (g.baseName === 'XNOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc ^ val, 0) === 1 ? 0 : 1];
+          } else if (g.baseName === 'BUFFER') {
+            outputs = [inputs[0]];
+          } else if (g.baseName === 'Tri-State Buffer') {
+            outputs = [inputs[1] === 1 ? inputs[0] : 'Z'];
+          } else if (g.baseName === 'Junction') {
+            outputs = [inputs[0], inputs[0], inputs[0]];
+          } else if (g.baseName === 'Configurable Multiplexer') {
+            const selBits = g.selectBits;
+            const inputCount = 1 << selBits;
+            let selVal = 0;
+            for (let i = 0; i < selBits; i++) {
+              selVal |= (inputs[inputCount + i] << i);
+            }
+            outputs = [inputs[selVal]];
+          } else if (g.baseName === 'Configurable Demultiplexer') {
+            const selBits = g.selectBits;
+            const outputCount = 1 << selBits;
+            const inpVal = inputs[0];
+            let selVal = 0;
+            for (let i = 0; i < selBits; i++) {
+              selVal |= (inputs[1 + i] << i);
+            }
+            outputs = Array(outputCount).fill(0);
+            outputs[selVal] = inpVal;
+          } else if (g.baseName === '8:3 Encoder') {
+            let outVal = 0;
+            for (let i = 0; i < 8; i++) {
+              if (inputs[i] === 1) outVal = i;
+            }
+            outputs = [(outVal >> 2) & 1, (outVal >> 1) & 1, outVal & 1];
+          } else if (g.baseName === '8:3 Priority Encoder') {
+            let outVal = 0;
+            let valid = 0;
+            for (let i = 0; i < 8; i++) {
+              if (inputs[i] === 1) {
+                outVal = i;
+                valid = 1;
+              }
+            }
+            outputs = [(outVal >> 2) & 1, (outVal >> 1) & 1, outVal & 1, valid];
+          } else if (g.baseName === '3:8 Decoder') {
+            const selVal = inputs[0] | (inputs[1] << 1) | (inputs[2] << 2);
+            outputs = Array(8).fill(0);
+            outputs[selVal] = 1;
+          } else if (g.baseName === '2-bit Comparator') {
+            const a = (inputs[0] << 1) | inputs[1];
+            const b = (inputs[2] << 1) | inputs[3];
+            outputs = [a === b ? 1 : 0, a > b ? 1 : 0, a < b ? 1 : 0];
+          } else if (g.baseName === '4-bit Magnitude Comparator') {
+            const a = (inputs[0] << 3) | (inputs[1] << 2) | (inputs[2] << 1) | inputs[3];
+            const b = (inputs[4] << 3) | (inputs[5] << 2) | (inputs[6] << 1) | inputs[7];
+            outputs = [a === b ? 1 : 0, a > b ? 1 : 0, a < b ? 1 : 0];
+          }
+
+          outputs.forEach((val, idx) => {
+            if (g.outputs[idx] && g.outputs[idx].value !== val) {
+              g.outputs[idx].value = val;
+              changed = true;
+            }
+          });
+        });
+
+        // Outputs display update
+        components.filter(c => c.type === 'output').forEach(o => {
+          const inputs = o.inputs.map(inp => {
+            if (inp.connectedTo) {
+              const src = components.find(x => x.id === inp.connectedTo.componentId);
+              return src ? src.outputs[inp.connectedTo.outputIndex].value : 'Z';
+            }
+            return 'Z';
+          });
+
+          if (o.baseName === 'LED') {
+            const val = inputs[0];
+            const indicator = document.getElementById(`${o.id}-led-indicator`);
+            if (indicator) {
+              if (val === 1) indicator.className = 'output-led active';
+              else indicator.className = 'output-led';
+            }
+            o.inputs[0].value = val;
+          } else if (o.baseName === 'Logic Probe') {
+            const val = inputs[0];
+            const indicator = document.getElementById(`${o.id}-probe-indicator`);
+            if (indicator) {
+              indicator.textContent = val;
+              if (val === 1) {
+                indicator.className = 'output-led active';
+              } else if (val === 0) {
+                indicator.className = 'output-led';
+                indicator.style.background = '#1f2937';
+              } else {
+                indicator.className = 'output-led';
+                indicator.style.background = '#4b5563';
+              }
+            }
+            o.inputs[0].value = val;
+          } else if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            const digitalInputs = inputs.map(v => v === 'Z' ? 0 : v);
+            updateSegmentDisplay(o.id, digitalInputs);
+            o.inputs.forEach((inp, idx) => inp.value = inputs[idx]);
+          }
+        });
+      }
+
+      const warnings = validateCircuit();
+      document.getElementById('circuit-warnings').innerHTML = warnings.length ? warnings.map(w => `• ${w}`).join('<br>') : '';
+
+      // Highlight float inputs
+      components.forEach(c => {
+        if (c.inputs) {
+          c.inputs.forEach((inp, idx) => {
+            const el = document.getElementById(inp.pinId);
+            if (el) {
+              if (!inp.connectedTo && c.type !== 'output' && c.baseName !== 'Label') {
+                el.classList.add('floating-warning');
+              } else {
+                el.classList.remove('floating-warning');
+              }
+            }
+          });
+        }
+      });
+
+      generateTruthTable();
+
+      if (components.length > 0) {
+        document.getElementById('cpp-code-container').style.display = 'block';
+        generateCPPCode();
+      } else {
+        document.getElementById('cpp-code-container').style.display = 'none';
+      }
+    }
+
+    function updateSegmentDisplay(id, inputs) {
+      const segEl = document.getElementById(`${id}-seg-display`);
+      if (!segEl) return;
+      const val = (inputs[0] << 3) | (inputs[1] << 2) | (inputs[2] << 1) | inputs[3];
+      const hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+      segEl.textContent = hexChars[val] || '-';
+    }
+
+    // --- Validation warnings ---
+    function validateCircuit() {
+      const warnings = [];
+      components.forEach(c => {
+        if (c.inputs && c.baseName !== 'Label') {
+          c.inputs.forEach((inp, idx) => {
+            if (!inp.connectedTo) {
+              const def = moduleComponents.find(m => m.name === c.baseName);
+              const label = (def && def.inputNames) ? def.inputNames[idx] : `In ${idx + 1}`;
+              warnings.push(`${c.name} pin '${label}' is unconnected`);
+            }
+          });
+        }
+      });
+      return Array.from(new Set(warnings));
+    }
+
+    // --- Truth table generation for combinational systems ---
+    function generateTruthTable() {
+      const inputs = components.filter(c => c.type === 'input');
+      const outputs = components.filter(c => c.type === 'output');
+      const container = document.getElementById('truth-table');
+      if (inputs.length === 0 || outputs.length === 0) {
+        container.innerHTML = '<p style="color:#94a3b8">No inputs/outputs to build truth table.</p>';
+        return;
+      }
+
+      const isSeq = components.some(c => c.type === 'sequential');
+      if (isSeq) {
+        container.innerHTML = '<p style="color:#f59e0b">Truth table is disabled for sequential logic.</p>';
+        return;
+      }
+
+      const isFloat = components.some(c => c.inputs && c.inputs.some(inp => !inp.connectedTo));
+      if (isFloat) {
+        container.innerHTML = '<p style="color:#f59e0b">Connect all inputs first.</p>';
+        return;
+      }
+      if (inputs.length > 8) {
+        container.innerHTML = '<p style="color:#f59e0b">Too many inputs (>8) for truth table.</p>';
+        return;
+      }
+
+      const inputOrder = inputs.map(i => i.id);
+      const combos = 1 << inputs.length;
+      let html = '<table style="width:100%; border-collapse:collapse; color:inherit;"><thead><tr>';
+      inputs.forEach(i => html += `<th style="text-align:left; padding:4px; border-bottom:1px solid rgba(0,0,0,0.1)">${i.probeName || i.name}</th>`);
+      outputs.forEach(o => html += `<th style="text-align:left; padding:4px; border-bottom:1px solid rgba(0,0,0,0.1)">${o.probeName || o.name}</th>`);
+      html += '</tr></thead><tbody>';
+
+      for (let k = 0; k < combos; k++) {
+        const vals = [];
+        for (let b = 0; b < inputs.length; b++) vals.push((k >> (inputs.length - 1 - b)) & 1);
+        const outVals = evaluateOnClone(vals, inputOrder);
+        html += '<tr>';
+        vals.forEach(v => html += `<td style="padding:2px">${v}</td>`);
+        outVals.forEach(v => html += `<td style="padding:2px">${v}</td>`);
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function evaluateOnClone(inputValues, inputOrder) {
+      const clone = JSON.parse(JSON.stringify(components));
+
+      inputOrder.forEach((id, i) => {
+        const cc = clone.find(x => x.id === id);
+        if (cc) {
+          cc.value = inputValues[i];
+          cc.outputs[0].value = inputValues[i];
+        }
+      });
+
+      let changed = true;
+      let iter = 0;
+      const maxIter = 50;
+
+      while (changed && iter < maxIter) {
+        changed = false;
+        iter++;
+
+        clone.filter(c => c.type === 'input').forEach(i => {
+          let expected = i.value | 0;
+          if (i.baseName === 'VCC') expected = 1;
+          if (i.baseName === 'GND') expected = 0;
+          if (i.outputs[0].value !== expected) {
+            i.outputs[0].value = expected;
+            changed = true;
+          }
+        });
+
+        clone.filter(c => c.type === 'gate' || c.type === 'junction').forEach(g => {
+          const inputs = g.inputs.map(inp => {
+            if (inp.connectedTo) {
+              const src = clone.find(x => x.id === inp.connectedTo.componentId);
+              return src ? src.outputs[inp.connectedTo.outputIndex].value : 0;
+            }
+            return 0;
+          });
+
+          let outputs = [0];
+
+          if (g.baseName === 'AND Gate') {
+            outputs = [inputs.reduce((acc, val) => acc & val, 1)];
+          } else if (g.baseName === 'OR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc | val, 0)];
+          } else if (g.baseName === 'NOT Gate') {
+            outputs = [inputs[0] === 1 ? 0 : 1];
+          } else if (g.baseName === 'NAND Gate') {
+            outputs = [inputs.reduce((acc, val) => acc & val, 1) === 1 ? 0 : 1];
+          } else if (g.baseName === 'NOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc | val, 0) === 1 ? 0 : 1];
+          } else if (g.baseName === 'XOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc ^ val, 0)];
+          } else if (g.baseName === 'XNOR Gate') {
+            outputs = [inputs.reduce((acc, val) => acc ^ val, 0) === 1 ? 0 : 1];
+          } else if (g.baseName === 'BUFFER') {
+            outputs = [inputs[0]];
+          } else if (g.baseName === 'Tri-State Buffer') {
+            outputs = [inputs[1] === 1 ? inputs[0] : 0];
+          } else if (g.baseName === 'Junction') {
+            outputs = [inputs[0], inputs[0], inputs[0]];
+          } else if (g.baseName === 'Configurable Multiplexer') {
+            const selBits = g.selectBits;
+            const inputCount = 1 << selBits;
+            let selVal = 0;
+            for (let i = 0; i < selBits; i++) {
+              selVal |= (inputs[inputCount + i] << i);
+            }
+            outputs = [inputs[selVal]];
+          } else if (g.baseName === 'Configurable Demultiplexer') {
+            const selBits = g.selectBits;
+            const outputCount = 1 << selBits;
+            const inpVal = inputs[0];
+            let selVal = 0;
+            for (let i = 0; i < selBits; i++) {
+              selVal |= (inputs[1 + i] << i);
+            }
+            outputs = Array(outputCount).fill(0);
+            outputs[selVal] = inpVal;
+          } else if (g.baseName === '8:3 Encoder') {
+            let outVal = 0;
+            for (let i = 0; i < 8; i++) {
+              if (inputs[i] === 1) outVal = i;
+            }
+            outputs = [(outVal >> 2) & 1, (outVal >> 1) & 1, outVal & 1];
+          } else if (g.baseName === '8:3 Priority Encoder') {
+            let outVal = 0;
+            let valid = 0;
+            for (let i = 0; i < 8; i++) {
+              if (inputs[i] === 1) {
+                outVal = i;
+                valid = 1;
+              }
+            }
+            outputs = [(outVal >> 2) & 1, (outVal >> 1) & 1, outVal & 1, valid];
+          } else if (g.baseName === '3:8 Decoder') {
+            const selVal = inputs[0] | (inputs[1] << 1) | (inputs[2] << 2);
+            outputs = Array(8).fill(0);
+            outputs[selVal] = 1;
+          } else if (g.baseName === '2-bit Comparator') {
+            const a = (inputs[0] << 1) | inputs[1];
+            const b = (inputs[2] << 1) | inputs[3];
+            outputs = [a === b ? 1 : 0, a > b ? 1 : 0, a < b ? 1 : 0];
+          } else if (g.baseName === '4-bit Magnitude Comparator') {
+            const a = (inputs[0] << 3) | (inputs[1] << 2) | (inputs[2] << 1) | inputs[3];
+            const b = (inputs[4] << 3) | (inputs[5] << 2) | (inputs[6] << 1) | inputs[7];
+            outputs = [a === b ? 1 : 0, a > b ? 1 : 0, a < b ? 1 : 0];
+          }
+
+          outputs.forEach((val, idx) => {
+            if (g.outputs[idx] && g.outputs[idx].value !== val) {
+              g.outputs[idx].value = val;
+              changed = true;
+            }
+          });
+        });
+
+        clone.filter(c => c.type === 'output').forEach(o => {
+          const inputs = o.inputs.map(inp => {
+            if (inp.connectedTo) {
+              const src = clone.find(x => x.id === inp.connectedTo.componentId);
+              return src ? src.outputs[inp.connectedTo.outputIndex].value : 0;
+            }
+            return 0;
+          });
+
+          if (o.baseName === 'LED' || o.baseName === 'Logic Probe') {
+            if (o.inputs[0].value !== inputs[0]) {
+              o.inputs[0].value = inputs[0];
+              changed = true;
+            }
+          } else if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            o.inputs.forEach((inp, idx) => {
+              if (inp.value !== inputs[idx]) {
+                inp.value = inputs[idx];
+                changed = true;
+              }
+            });
+          }
+        });
+      }
+
+      const outTypes = components.filter(c => c.type === 'output');
+      return outTypes.map(o => {
+        const oc = clone.find(x => x.id === o.id);
+        if (!oc) return 0;
+        return oc.inputs[0] ? oc.inputs[0].value : 0;
+      });
+    }
+
+    // --- Inputs switches control ---
+    function toggleInput(id) {
+      const comp = components.find(c => c.id === id);
+      if (!comp) return;
+      pushUndo();
+      comp.value = comp.value ? 0 : 1;
+      runSimulation();
+    }
+
+    function setPushButton(id, val) {
+      const comp = components.find(c => c.id === id);
+      if (!comp) return;
+      comp.value = val;
+      runSimulation();
+    }
+
+    // --- Selections & multi configurations ---
+    function select(id, toggle = false) {
+      if (!toggle) {
+        clearSelections();
+      }
+
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('selected');
+        if (!selectedIds.includes(id)) {
+          selectedIds.push(id);
+        }
+      }
+
+      if (selectedIds.length === 1) {
+        const model = components.find(c => c.id === selectedIds[0]);
+        if (model) updateProperties(model);
+      } else {
+        updateMultiProperties();
+      }
+      updatePropertiesPanelVisibility();
+    }
+
+    // --- Clears all selections ---
+    function clearSelections() {
+      document.querySelectorAll('.dropped-item').forEach(el => el.classList.remove('selected'));
+      selectedIds = [];
+      document.getElementById('properties-content').innerHTML = '<p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to configure properties</p>';
+      updatePropertiesPanelVisibility();
+    }
+
+    function updatePropertiesPanelVisibility() {
+      const panel = document.querySelector('.properties-panel');
+      const container = document.querySelector('.drag-drop-container');
+      if (!panel || !container) return;
+
+      if (selectedIds.length > 0) {
+        panel.style.display = 'block';
+        container.style.gridTemplateColumns = '200px 1fr 240px';
+      } else {
+        panel.style.display = 'none';
+        container.style.gridTemplateColumns = '200px 1fr';
+      }
+    }
+
+    // --- Properties configuration panels ---
+    function updateProperties(m) {
+      const p = document.getElementById('properties-content');
+      let html = `<h3>${m.name}</h3><p><strong>Type:</strong> ${m.type}</p>`;
+
+      if (m.baseName === 'Clock') {
+        html += `<p>Frequency (Hz):</p>
+                 <input type="number" class="config-control" min="1" max="10" value="${m.frequency}" onchange="changeClockFrequency('${m.id}', this.value)"/>`;
+      }
+
+      if (['AND Gate', 'OR Gate', 'NAND Gate', 'NOR Gate', 'XOR Gate', 'XNOR Gate'].includes(m.baseName)) {
+        html += `<p>Inputs Count (2-8):</p>
+                 <input type="number" class="config-control" min="2" max="8" value="${m.inputs.length}" onchange="changeComponentConfig('${m.id}', 'inputs', this.value)"/>`;
+      }
+
+      if (m.baseName === 'Configurable Multiplexer' || m.baseName === 'Configurable Demultiplexer') {
+        html += `<p>Select Lines Bits (1-3):</p>
+                 <select class="config-control" onchange="changeComponentConfig('${m.id}', 'selectBits', this.value)">
+                   <option value="1" ${m.selectBits == 1 ? 'selected' : ''}>1 select line (2 routes)</option>
+                   <option value="2" ${m.selectBits == 2 ? 'selected' : ''}>2 select lines (4 routes)</option>
+                   <option value="3" ${m.selectBits == 3 ? 'selected' : ''}>3 select lines (8 routes)</option>
+                 </select>`;
+      }
+
+      if (m.baseName === 'Label') {
+        html += `<p>Text:</p>
+                 <input type="text" class="config-control" value="${m.text}" oninput="changeLabelText('${m.id}', this.value)"/>
+                 <p style="margin-top:6px;">Font Size (px):</p>
+                 <input type="number" class="config-control" min="10" max="32" value="${m.fontSize}" onchange="changeLabelFontSize('${m.id}', this.value)"/>`;
+      }
+
+      html += `<hr style="margin:10px 0; border:none; border-top:1px solid var(--border);">
+               <div style="display:flex; gap:6px;">
+                 <button class="tool-btn" style="flex:1;" onclick="rotateComponent('${m.id}')">Rotate ↻</button>
+                 <button class="close-workspace" style="flex:1; margin-top:0;" onclick="deleteComponent('${m.id}')">Delete</button>
+               </div>`;
+      p.innerHTML = html;
+    }
+
+    function updateMultiProperties() {
+      const p = document.getElementById('properties-content');
+      if (selectedIds.length === 0) {
+        p.innerHTML = '<p style="color:#94a3b8; text-align:center; margin-top:2rem;">Select a component to configure properties</p>';
+        return;
+      }
+
+      let html = `<h3>Multiple Selected</h3><p>Selected count: ${selectedIds.length} items</p>`;
+      html += `<hr style="margin:10px 0; border:none; border-top:1px solid var(--border);">
+               <div style="display:flex; flex-direction:column; gap:6px;">
+                 <button class="tool-btn" style="width:100%" onclick="rotateSelected()">Rotate All ↻</button>
+                 <button class="close-workspace" style="width:100%" onclick="deleteSelected()">Delete Selected</button>
+               </div>`;
+      p.innerHTML = html;
+    }
+
+    // --- Property modification updates ---
+    function changeClockFrequency(id, val) {
+      const comp = components.find(c => c.id === id);
+      if (!comp) return;
+      pushUndo();
+      comp.frequency = Math.max(1, parseInt(val) || 1);
+      const lbl = document.getElementById(`${id}-freq-lbl`);
+      if (lbl) lbl.textContent = comp.frequency + 'Hz';
+    }
+
+    function changeLabelText(id, val) {
+      const comp = components.find(c => c.id === id);
+      if (!comp) return;
+      comp.text = val;
+      const inp = document.getElementById(`${id}-lbl-input`);
+      if (inp) inp.value = val;
+    }
+
+    function changeLabelFontSize(id, val) {
+      const comp = components.find(c => c.id === id);
+      if (!comp) return;
+      pushUndo();
+      comp.fontSize = parseInt(val) || 14;
+      const inp = document.getElementById(`${id}-lbl-input`);
+      if (inp) inp.style.fontSize = comp.fontSize + 'px';
+    }
+
+    function changeComponentConfig(id, type, value) {
+      const model = components.find(c => c.id === id);
+      if (!model) return;
+
+      pushUndo();
+
+      if (model.baseName === 'Configurable Multiplexer') {
+        const selBits = parseInt(value);
+        model.selectBits = selBits;
+        const inputCount = (1 << selBits) + selBits;
+
+        model.inputs.forEach(inp => disconnectPin(inp.pinId));
+        model.inputs = [];
+        for (let i = 0; i < inputCount; i++) {
+          model.inputs.push({ pinId: `${id}-in-${i}`, connectedTo: null, value: 0 });
+        }
+      } else if (model.baseName === 'Configurable Demultiplexer') {
+        const selBits = parseInt(value);
+        model.selectBits = selBits;
+        const outputCount = 1 << selBits;
+
+        model.inputs.forEach(inp => disconnectPin(inp.pinId));
+        model.outputs.forEach(out => disconnectPin(out.pinId));
+
+        model.inputs = [];
+        for (let i = 0; i < 1 + selBits; i++) {
+          model.inputs.push({ pinId: `${id}-in-${i}`, connectedTo: null, value: 0 });
+        }
+        model.outputs = [];
+        for (let i = 0; i < outputCount; i++) {
+          model.outputs.push({ pinId: `${id}-out-${i}`, connectedTo: [], value: 0 });
+        }
+      } else if (['AND Gate', 'OR Gate', 'NAND Gate', 'NOR Gate', 'XOR Gate', 'XNOR Gate'].includes(model.baseName)) {
+        const inputCount = parseInt(value);
+        model.inputs.forEach(inp => disconnectPin(inp.pinId));
+        model.inputs = [];
+        for (let i = 0; i < inputCount; i++) {
+          model.inputs.push({ pinId: `${id}-in-${i}`, connectedTo: null, value: 0 });
+        }
+      }
+
+      const dom = document.getElementById(id);
+      if (dom) dom.remove();
+
+      renderComponentToDOM(model);
+      drawWires();
+      runSimulation();
+      updateProperties(model);
+    }
+
+    function disconnectPin(pinId) {
+      wires = wires.filter(w => {
+        if (w.from.pinId === pinId || w.to.pinId === pinId) {
+          const fromC = components.find(c => c.id === w.from.compId);
+          const toC = components.find(c => c.id === w.to.compId);
+          if (fromC) {
+            fromC.outputs.forEach(out => {
+              out.connectedTo = out.connectedTo.filter(conn => conn.componentId !== w.to.compId);
+            });
+          }
+          if (toC) {
+            toC.inputs.forEach(inp => {
+              if (inp.connectedTo && inp.connectedTo.componentId === w.from.compId) {
+                inp.connectedTo = null;
+              }
+            });
+          }
+          return false;
+        }
+        return true;
+      });
+    }
+
+    // --- Component actions (Rotation, Delete) ---
+    function rotateComponent(id) {
+      const model = components.find(c => c.id === id);
+      if (!model) return;
+      pushUndo();
+      model.rotation = (model.rotation + 90) % 360;
+      const dom = document.getElementById(id);
+      if (dom) dom.style.transform = `rotate(${model.rotation}deg)`;
+
+      drawWires();
+      runSimulation();
+    }
+
+    function rotateSelected() {
+      if (selectedIds.length === 0) return;
+      pushUndo();
+      selectedIds.forEach(id => {
+        const model = components.find(c => c.id === id);
+        if (model) {
+          model.rotation = (model.rotation + 90) % 360;
+          const dom = document.getElementById(id);
+          if (dom) dom.style.transform = `rotate(${model.rotation}deg)`;
+        }
+      });
+      drawWires();
+      runSimulation();
+    }
+
+    function deleteComponent(id) {
+      pushUndo();
+      const el = document.getElementById(id);
+      if (el) el.remove();
+
+      components.forEach(c => {
+        if (c.inputs) {
+          c.inputs.forEach(inp => {
+            if (inp.connectedTo && inp.connectedTo.componentId === id) inp.connectedTo = null;
+          });
+        }
+        if (c.outputs) {
+          c.outputs.forEach(out => {
+            out.connectedTo = out.connectedTo.filter(x => x.componentId !== id);
+          });
+        }
+      });
+
+      wires = wires.filter(w => w.from.compId !== id && w.to.compId !== id);
+      components = components.filter(c => c.id !== id);
+
+      clearSelections();
+      drawWires();
+      runSimulation();
+      if (components.length === 0) document.getElementById('empty-state').style.display = 'flex';
+    }
+
+    function deleteSelected() {
+      if (selectedIds.length === 0) return;
+      pushUndo();
+
+      selectedIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+
+        components.forEach(c => {
+          if (c.inputs) {
+            c.inputs.forEach(inp => {
+              if (inp.connectedTo && inp.connectedTo.componentId === id) inp.connectedTo = null;
+            });
+          }
+          if (c.outputs) {
+            c.outputs.forEach(out => {
+              out.connectedTo = out.connectedTo.filter(x => x.componentId !== id);
+            });
+          }
+        });
+
+        wires = wires.filter(w => w.from.compId !== id && w.to.compId !== id);
+      });
+
+      components = components.filter(c => !selectedIds.includes(c.id));
+      clearSelections();
+      drawWires();
+      runSimulation();
+      if (components.length === 0) document.getElementById('empty-state').style.display = 'flex';
+    }
+
+    // --- Zoom and Pan Workspace actions ---
+    function zoomIn() { applyZoom(zoom * 1.15); }
+    function zoomOut() { applyZoom(zoom / 1.15); }
+    function zoomReset() { applyZoom(1.0, undefined, undefined, true); }
+
+    function applyZoom(newZoom, centerX, centerY, isReset = false) {
+      const viewport = document.getElementById('canvas-viewport');
+      const container = document.getElementById('canvas-container');
+      const rect = viewport.getBoundingClientRect();
+
+      if (centerX === undefined) centerX = rect.left + rect.width / 2;
+      if (centerY === undefined) centerY = rect.top + rect.height / 2;
+
+      const mouseX = centerX - rect.left;
+      const mouseY = centerY - rect.top;
+
+      const localX = (mouseX - panX) / zoom;
+      const localY = (mouseY - panY) / zoom;
+
+      if (isReset) {
+        zoom = 1.0;
+        panX = 0;
+        panY = 0;
+      } else {
+        zoom = Math.max(0.25, Math.min(2.5, newZoom));
+        panX = mouseX - localX * zoom;
+        panY = mouseY - localY * zoom;
+      }
+
+      container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+      drawWires();
+    }
+
+    // --- Toolbar state controls ---
+    function setTool(t) {
+      tool = t;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-${t}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      clearPending();
+    }
+
+    function clearCircuit() {
+      if (confirm('Clear the entire canvas workspace?')) {
+        pushUndo();
+        components.forEach(c => {
+          const el = document.getElementById(c.id);
+          if (el) el.remove();
+        });
+        components = [];
+        wires = [];
+        idCounter = 0;
+        lastExport = null;
+        clearSelections();
+        drawWires();
+        document.getElementById('empty-state').style.display = 'flex';
+        document.getElementById('cpp-code-container').style.display = 'none';
+        document.getElementById('truth-table').innerHTML = '';
+        document.getElementById('circuit-warnings').innerHTML = '';
+      }
+    }
+
+    // --- Copy/Paste/Duplicate Clipboard ---
+    function copySelected() {
+      if (selectedIds.length === 0) return;
+      const copiedList = components.filter(c => selectedIds.includes(c.id));
+
+      let minX = Infinity, minY = Infinity;
+      copiedList.forEach(c => {
+        if (c.x < minX) minX = c.x;
+        if (c.y < minY) minY = c.y;
+      });
+
+      const copiedWires = wires.filter(w => selectedIds.includes(w.from.compId) && selectedIds.includes(w.to.compId));
+      clipboard = {
+        components: copiedList.map(c => ({
+          ...c,
+          x: c.x - minX,
+          y: c.y - minY
+        })),
+        wires: copiedWires
+      };
+    }
+
+    function pasteSelected() {
+      if (!clipboard) return;
+
+      pushUndo();
+
+      const viewport = document.getElementById('canvas-viewport');
+      const rect = viewport.getBoundingClientRect();
+      const localCoords = getLocalCoords(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+      const targetX = localCoords.x;
+      const targetY = localCoords.y;
+
+      const idMap = {};
+      const newModels = [];
+
+      clipboard.components.forEach(c => {
+        idCounter++;
+        const newId = 'c' + idCounter;
+        idMap[c.id] = newId;
+
+        const posX = Math.max(0, targetX + c.x);
+        const posY = Math.max(0, targetY + c.y);
+
+        const clone = JSON.parse(JSON.stringify(c));
+        clone.id = newId;
+        clone.x = posX;
+        clone.y = posY;
+        clone.name = `${c.baseName} ${idCounter}`;
+
+        clone.inputs.forEach((inp, idx) => {
+          inp.pinId = `${newId}-in-${idx}`;
+          inp.connectedTo = null;
+          inp.value = 0;
+        });
+
+        clone.outputs.forEach((out, idx) => {
+          out.pinId = `${newId}-out-${idx}`;
+          out.connectedTo = [];
+          out.value = c.type === 'input' ? c.value : 0;
+        });
+
+        newModels.push(clone);
+      });
+
+      newModels.forEach(m => {
+        renderComponentToDOM(m);
+      });
+
+      clipboard.wires.forEach(w => {
+        const fromNewId = idMap[w.from.compId];
+        const toNewId = idMap[w.to.compId];
+        if (!fromNewId || !toNewId) return;
+
+        const oldFromComp = clipboard.components.find(x => x.id === w.from.compId);
+        const oldToComp = clipboard.components.find(x => x.id === w.to.compId);
+        const fromIdx = oldFromComp.outputs.findIndex(o => o.pinId === w.from.pinId);
+        const toIdx = oldToComp.inputs.findIndex(i => i.pinId === w.to.pinId);
+
+        const newFromComp = components.find(x => x.id === fromNewId);
+        const newToComp = components.find(x => x.id === toNewId);
+        if (!newFromComp || !newToComp) return;
+
+        const fromPin = newFromComp.outputs[fromIdx];
+        const toPin = newToComp.inputs[toIdx];
+
+        toPin.connectedTo = { componentId: fromNewId, outputIndex: fromIdx };
+        fromPin.connectedTo.push({ componentId: toNewId, inputIndex: toIdx });
+
+        wires.push({
+          from: { compId: fromNewId, pinId: fromPin.pinId },
+          to: { compId: toNewId, pinId: toPin.pinId }
+        });
+      });
+
+      clearSelections();
+      newModels.forEach(m => {
+        document.getElementById(m.id).classList.add('selected');
+        selectedIds.push(m.id);
+      });
+
+      drawWires();
+      runSimulation();
+      updateMultiProperties();
+    }
+
+    function duplicateSelected() {
+      copySelected();
+      // Offset clipboard center coordinates slightly for visual clarity
+      if (clipboard) {
+        clipboard.components.forEach(c => {
+          c.x += 40;
+          c.y += 40;
+        });
+        pasteSelected();
+      }
+    }
+
+    // --- Undo / Redo history storage ---
+    function pushUndo() {
+      if (undoStack.length > 40) undoStack.shift();
+      const state = JSON.stringify({
+        components,
+        wires,
+        idCounter
+      });
+      undoStack.push(state);
+      redoStack.length = 0; // Clear redo on action
+    }
+
+    // --- Undo action ---
+    function undo() {
+      if (undoStack.length === 0) return;
+      const current = JSON.stringify({ components, wires, idCounter });
+      redoStack.push(current);
+      const prev = undoStack.pop();
+      restoreState(prev);
+    }
+
+    // --- Redo action ---
+    function redo() {
+      if (redoStack.length === 0) return;
+      const current = JSON.stringify({ components, wires, idCounter });
+      undoStack.push(current);
+      const next = redoStack.pop();
+      restoreState(next);
+    }
+
+    function restoreState(stateStr) {
+      const data = JSON.parse(stateStr);
+      components.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (el) el.remove();
+      });
+
+      components = [];
+      wires = data.wires || [];
+      idCounter = data.idCounter || 0;
+
+      const list = data.components || [];
+      if (list.length === 0) {
+        document.getElementById('empty-state').style.display = 'flex';
+        drawWires();
+        return;
+      }
+
+      list.forEach(c => {
+        renderComponentToDOM(c);
+      });
+
+      assignProbeNames();
+      drawWires();
+      runSimulation();
+      clearSelections();
+    }
+
+    // --- Export / Import & Cloud Sync functions ---
+    function exportCircuitToClipboard() {
+      const payload = JSON.stringify(components);
+      lastExport = payload;
+      navigator.clipboard.writeText(payload).then(() => alert('Circuit JSON copied to clipboard.'));
+    }
+
+    function copyLastExport() {
+      if (lastExport) {
+        navigator.clipboard.writeText(lastExport).then(() => alert('Last exported JSON copied.'));
+      } else {
+        alert('No JSON available yet. Export a circuit first.');
+      }
+    }
+
+    async function loadUserCircuit() {
+      const token = localStorage.getItem('virtulab_token');
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/user/circuit', {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data && data.circuit) {
+          importCircuit(data.circuit);
+        }
+      } catch (e) {
+        console.warn('Failed to load circuit from cloud', e);
+      }
+    }
+
+    async function saveCircuitToCloud() {
+      const token = localStorage.getItem('virtulab_token');
+      if (!token) {
+        alert('Please log in to save your circuit to the cloud.');
+        return;
+      }
+
+      const payload = {
+        components: components,
+        wires: wires,
+        idCounter: idCounter
+      };
+
+      try {
+        const response = await fetch('/api/user/circuit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ circuit: JSON.stringify(payload) })
+        });
+        if (response.ok) {
+          alert('Circuit successfully saved to the cloud!');
+        } else {
+          const err = await response.json();
+          alert('Failed to save circuit: ' + (err.error || response.statusText));
+        }
+      } catch (e) {
+        alert('Network error when saving circuit to cloud: ' + e.message);
+      }
+    }
+
+    function importCircuit(designStr) {
+      try {
+        const data = JSON.parse(designStr);
+        let importedComponents = [];
+        let importedWires = [];
+        let importedIdCounter = 0;
+
+        if (Array.isArray(data)) {
+          importedComponents = data;
+        } else if (data && Array.isArray(data.components)) {
+          importedComponents = data.components;
+          importedWires = data.wires || [];
+          importedIdCounter = data.idCounter || 0;
+        } else {
+          return;
+        }
+
+        components.forEach(c => {
+          const el = document.getElementById(c.id);
+          if (el) el.remove();
+        });
+
+        components = [];
+        wires = [];
+        idCounter = importedIdCounter;
+
+        if (importedComponents.length === 0) {
+          document.getElementById('empty-state').style.display = 'flex';
+          drawWires();
+          return;
+        }
+
+        importedComponents.forEach(c => {
+          renderComponentToDOM(c);
+        });
+
+        wires = importedWires;
+        assignProbeNames();
+        drawWires();
+        runSimulation();
+      } catch (e) {
+        console.error('Failed to import saved circuit:', e);
+      }
+    }
+
+    // --- Topological Sorting helper ---
+    function topologicalSort() {
+      const adj = {};
+      components.forEach(c => adj[c.id] = []);
+
+      components.forEach(c => {
+        if (c.inputs) {
+          c.inputs.forEach(inp => {
+            if (inp.connectedTo) {
+              const srcId = inp.connectedTo.componentId;
+              if (adj[srcId]) {
+                adj[srcId].push(c.id);
+              }
+            }
+          });
+        }
+      });
+
+      const visited = new Set();
+      const tempVisited = new Set();
+      const order = [];
+
+      function visit(nodeId) {
+        if (tempVisited.has(nodeId)) return; // feedback loop cycle guard
+        if (!visited.has(nodeId)) {
+          tempVisited.add(nodeId);
+          const neighbors = adj[nodeId] || [];
+          neighbors.forEach(nId => visit(nId));
+          tempVisited.delete(nodeId);
+          visited.add(nodeId);
+          order.push(nodeId);
+        }
+      }
+
+      components.forEach(c => {
+        if (!visited.has(c.id)) {
+          visit(c.id);
+        }
+      });
+      return order.reverse();
+    }
+    // --- C++ Code Generation ---
+    function generateCPPCode() {
+      // 1. Build Naming Maps and Helpers
+      const getCompPrefix = (c) => {
+        const num = c.id.replace('c', '');
+        const nameMap = {
+          'AND Gate': 'AND',
+          'OR Gate': 'OR',
+          'NOT Gate': 'NOT',
+          'NAND Gate': 'NAND',
+          'NOR Gate': 'NOR',
+          'XOR Gate': 'XOR',
+          'XNOR Gate': 'XNOR',
+          'BUFFER': 'BUF',
+          'Tri-State Buffer': 'TRIBUF',
+          'Junction': 'JUNC',
+          'Toggle Switch': 'SWITCH',
+          'Push Button': 'BUTTON',
+          'Clock': 'CLK',
+          'VCC': 'VCC',
+          'GND': 'GND',
+          'LED': 'LED',
+          'Logic Probe': 'PROBE',
+          'Seven Segment Display': 'SEG',
+          'Hex Display': 'HEX',
+          'SR Latch': 'SRLATCH',
+          'SR Flip-Flop': 'SRFF',
+          'D Flip-Flop': 'DFF',
+          'JK Flip-Flop': 'JKFF',
+          'T Flip-Flop': 'TFF',
+          '4-bit Register': 'REG4',
+          '8-bit Register': 'REG8',
+          'Universal Shift Register': 'USR',
+          'SISO Shift Register': 'SISO',
+          'SIPO Shift Register': 'SIPO',
+          'PISO Shift Register': 'PISO',
+          'PIPO Shift Register': 'PIPO',
+          'Ripple Counter': 'RIPCNTR',
+          'Synchronous Counter': 'SYNCCNTR',
+          'Up Counter': 'UPCNTR',
+          'Down Counter': 'DNCNTR',
+          'Up/Down Counter': 'UDCNTR',
+          'Ring Counter': 'RINGCNTR',
+          'Johnson Counter': 'JOHNSONCNTR',
+          'Configurable Multiplexer': 'MUX',
+          'Configurable Demultiplexer': 'DEMUX',
+          '8:3 Encoder': 'ENC',
+          '8:3 Priority Encoder': 'PRIENC',
+          '3:8 Decoder': 'DEC',
+          '2-bit Comparator': 'COMP2',
+          '4-bit Magnitude Comparator': 'COMP4'
+        };
+        const base = nameMap[c.baseName] || 'COMP';
+        return `${base}${num}`;
+      };
+
+      const getPinVarName = (c, idx) => {
+        const prefix = getCompPrefix(c);
+        if (c.type === 'input') {
+          return `${prefix}_Output`;
+        }
+        if (c.type === 'output') {
+          return `${prefix}_Input`;
+        }
+        if (['AND Gate', 'OR Gate', 'NOT Gate', 'NAND Gate', 'NOR Gate', 'XOR Gate', 'XNOR Gate', 'BUFFER', 'Tri-State Buffer', 'Configurable Multiplexer'].includes(c.baseName)) {
+          return `${prefix}_Output`;
+        }
+        if (c.baseName === 'Junction') {
+          return `${prefix}_Out${idx}`;
+        }
+        if (['Configurable Demultiplexer', '3:8 Decoder'].includes(c.baseName)) {
+          return `${prefix}_Y${idx}`;
+        }
+        if (c.baseName === '8:3 Encoder') {
+          return `${prefix}_Y${2 - idx}`;
+        }
+        if (c.baseName === '8:3 Priority Encoder') {
+          if (idx === 3) return `${prefix}_V`;
+          return `${prefix}_Y${2 - idx}`;
+        }
+        if (['2-bit Comparator', '4-bit Magnitude Comparator'].includes(c.baseName)) {
+          const cmpNames = ['AEB', 'AGB', 'ALB'];
+          return `${prefix}_${cmpNames[idx] || 'Out' + idx}`;
+        }
+        if (['SR Latch', 'SR Flip-Flop', 'JK Flip-Flop', 'D Flip-Flop', 'T Flip-Flop'].includes(c.baseName)) {
+          return idx === 0 ? `${prefix}_Q` : `${prefix}_QN`;
+        }
+        if (c.baseName === 'SISO Shift Register' || c.baseName === 'PISO Shift Register') {
+          return `${prefix}_SOUT`;
+        }
+        if (['4-bit Register', 'Universal Shift Register', 'SIPO Shift Register', 'PIPO Shift Register', 'Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter', 'Ring Counter', 'Johnson Counter', '8-bit Register'].includes(c.baseName)) {
+          return `${prefix}_Q${idx}`;
+        }
+        return `${prefix}_out_${idx}`;
+      };
+
+      const getIn = (c, idx) => {
+        const inp = c.inputs[idx];
+        if (inp && inp.connectedTo) {
+          const src = components.find(x => x.id === inp.connectedTo.componentId);
+          if (src) {
+            return getPinVarName(src, inp.connectedTo.outputIndex);
+          }
+        }
+        return `false`;
+      };
+
+      const getClockPinIndex = (c) => {
+        if (['SR Flip-Flop', 'JK Flip-Flop'].includes(c.baseName)) return 2;
+        if (['D Flip-Flop', 'T Flip-Flop', 'SISO Shift Register', 'SIPO Shift Register'].includes(c.baseName)) return 1;
+        if (['4-bit Register', 'PIPO Shift Register'].includes(c.baseName)) return 4;
+        if (['PISO Shift Register'].includes(c.baseName)) return 5;
+        if (['8-bit Register', 'Universal Shift Register'].includes(c.baseName)) return 8;
+        if (['Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter', 'Ring Counter', 'Johnson Counter'].includes(c.baseName)) return 0;
+        return -1;
+      };
+
+      const inputs = components.filter(c => c.type === 'input');
+      const outputs = components.filter(c => c.type === 'output');
+      const isSequential = components.some(c => c.type === 'sequential');
+
+      // 2. Perform Graph Validations
+      const errors = [];
+      const getPinIncomingCount = (pinId) => wires.filter(w => w.to.pinId === pinId).length;
+      const getPinOutgoingCount = (pinId) => wires.filter(w => w.from.pinId === pinId).length;
+
+      // Validate Wires Direction & Short Circuits
+      wires.forEach(w => {
+        const srcComp = components.find(c => c.id === w.from.compId);
+        const dstComp = components.find(c => c.id === w.to.compId);
+        if (!srcComp || !dstComp) {
+          errors.push(`Broken wire connection referencing non-existent components.`);
+          return;
+        }
+        const isFromInput = srcComp.inputs && srcComp.inputs.some(p => p.pinId === w.from.pinId);
+        const isToInput = dstComp.inputs && dstComp.inputs.some(p => p.pinId === w.to.pinId);
+        const isFromOutput = srcComp.outputs && srcComp.outputs.some(p => p.pinId === w.from.pinId);
+        const isToOutput = dstComp.outputs && dstComp.outputs.some(p => p.pinId === w.to.pinId);
+
+        if (isFromInput && isToInput) {
+          errors.push(`Input-to-Input Connection Error: Wire connects input pin of ${srcComp.name} to input pin of ${dstComp.name}.`);
+        }
+        if (isFromOutput && isToOutput) {
+          errors.push(`Output-to-Output Connection Error: Wire connects output pin of ${srcComp.name} to output pin of ${dstComp.name}.`);
+        }
+        if (isFromInput && isToOutput) {
+          errors.push(`Invalid Wire Direction: Wire runs backwards from input pin of ${srcComp.name} to output pin of ${dstComp.name}.`);
+        }
+      });
+
+      // Multiple outputs driving one input
+      components.forEach(c => {
+        if (c.inputs) {
+          c.inputs.forEach(inp => {
+            const incoming = wires.filter(w => w.to.pinId === inp.pinId);
+            if (incoming.length > 1) {
+              errors.push(`Multiple Outputs Driving One Input: Input pin of ${c.name} is driven by ${incoming.length} different sources.`);
+            }
+          });
+        }
+      });
+
+      // Floating inputs
+      components.forEach(c => {
+        if (c.inputs && c.baseName !== 'Label') {
+          c.inputs.forEach((inp, idx) => {
+            if (getPinIncomingCount(inp.pinId) === 0) {
+              const def = moduleComponents.find(m => m.name === c.baseName);
+              const pinLabel = (def && def.inputNames) ? def.inputNames[idx] : `Input ${idx + 1}`;
+              errors.push(`Floating Input Error: Component ${c.name} has unconnected input pin '${pinLabel}'.`);
+            }
+          });
+        }
+      });
+
+      // Floating outputs
+      components.forEach(c => {
+        if (c.outputs && c.outputs.length > 0) {
+          if (c.baseName === 'Junction') {
+            const connectedOutputs = c.outputs.filter(out => getPinOutgoingCount(out.pinId) > 0);
+            if (connectedOutputs.length === 0) {
+              errors.push(`Floating Output Error: Junction ${c.name} has no connected outgoing paths.`);
+            }
+          } else if (c.outputs.length === 1) {
+            if (getPinOutgoingCount(c.outputs[0].pinId) === 0) {
+              errors.push(`Floating Output Error: Component ${c.name} has an unconnected output pin.`);
+            }
+          } else {
+            const totalOutgoing = c.outputs.reduce((acc, out) => acc + getPinOutgoingCount(out.pinId), 0);
+            if (totalOutgoing === 0) {
+              errors.push(`Floating Output Error: Sequential or routing component ${c.name} has all outputs unconnected.`);
+            }
+          }
+        }
+      });
+
+      // Missing clock connections
+      components.forEach(c => {
+        if (c.type === 'sequential') {
+          const clkIdx = getClockPinIndex(c);
+          if (clkIdx !== -1) {
+            if (getPinIncomingCount(c.inputs[clkIdx].pinId) === 0) {
+              errors.push(`Missing Clock Connection: Sequential component ${c.name} requires a connected CLK input.`);
+            }
+          }
+        }
+      });
+
+      // Path Finding Helper for Loops/Feedback
+      const hasCombinationalPath = (startCompId, targetPinId) => {
+        const visited = new Set();
+        const queue = [startCompId];
+        while (queue.length > 0) {
+          const currentId = queue.shift();
+          if (visited.has(currentId)) continue;
+          visited.add(currentId);
+          
+          const currentComp = components.find(x => x.id === currentId);
+          if (!currentComp || !currentComp.outputs) continue;
+          
+          for (let out of currentComp.outputs) {
+            const outgoingWires = wires.filter(w => w.from.pinId === out.pinId);
+            for (let w of outgoingWires) {
+              if (w.to.pinId === targetPinId) {
+                return true;
+              }
+              const destComp = components.find(x => x.id === w.to.compId);
+              if (destComp && (destComp.type === 'gate' || destComp.type === 'junction')) {
+                queue.push(destComp.id);
+              }
+            }
+          }
+        }
+        return false;
+      };
+
+      // Invalid sequential feedback
+      components.forEach(c => {
+        if (c.type === 'sequential') {
+          const clkIdx = getClockPinIndex(c);
+          if (clkIdx !== -1) {
+            if (hasCombinationalPath(c.id, c.inputs[clkIdx].pinId)) {
+              errors.push(`Invalid Sequential Feedback: Sequential component ${c.name} feeds back combinationaly into its own clock pin.`);
+            }
+          }
+        }
+      });
+
+      // Circular combinational loops
+      const checkCombinationalCycles = () => {
+        const visited = new Set();
+        const recStack = new Set();
+        let hasCycle = false;
+
+        const dfs = (id) => {
+          visited.add(id);
+          recStack.add(id);
+
+          const comp = components.find(x => x.id === id);
+          if (comp && comp.outputs) {
+            for (let out of comp.outputs) {
+              const outgoingWires = wires.filter(w => w.from.pinId === out.pinId);
+              for (let w of outgoingWires) {
+                const destComp = components.find(x => x.id === w.to.compId);
+                if (destComp && (destComp.type === 'gate' || destComp.type === 'junction')) {
+                  if (recStack.has(destComp.id)) {
+                    hasCycle = true;
+                    return;
+                  }
+                  if (!visited.has(destComp.id)) {
+                    dfs(destComp.id);
+                    if (hasCycle) return;
+                  }
+                }
+              }
+            }
+          }
+          recStack.delete(id);
+        };
+
+        const combComps = components.filter(c => c.type === 'gate' || c.type === 'junction');
+        for (let c of combComps) {
+          if (!visited.has(c.id)) {
+            dfs(c.id);
+            if (hasCycle) {
+              errors.push(`Circular Combinational Loop: Detected a feedback cycle through combinational gates and routing elements.`);
+              break;
+            }
+          }
+        }
+      };
+      checkCombinationalCycles();
+
+      // Show warnings/errors if validation failed
+      if (errors.length > 0) {
+        let errHtml = `<div style="color: #ef4444; font-weight: bold; font-family: monospace; font-size: 11px; line-height: 1.5; padding: 8px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 6px;">`;
+        errHtml += `<strong>C++ Compilation Blocked - Validation Errors:</strong><br><br>`;
+        errors.forEach(e => {
+          errHtml += `• ${e}<br>`;
+        });
+        errHtml += `</div>`;
+        document.getElementById('cpp-code-block').innerHTML = errHtml;
+        generatedCPPCode = '';
+        return;
+      }
+
+      // 3. Topological Sorting
+      const topologicalSortCombinational = () => {
+        const visited = new Set();
+        const order = [];
+
+        const visit = (compId) => {
+          if (visited.has(compId)) return;
+          const comp = components.find(x => x.id === compId);
+          if (!comp || (comp.type !== 'gate' && comp.type !== 'junction')) return;
+
+          if (comp.inputs) {
+            comp.inputs.forEach(inp => {
+              if (inp.connectedTo) {
+                const srcId = inp.connectedTo.componentId;
+                const srcComp = components.find(x => x.id === srcId);
+                if (srcComp && (srcComp.type === 'gate' || srcComp.type === 'junction')) {
+                  visit(srcId);
+                }
+              }
+            });
+          }
+
+          visited.add(compId);
+          order.push(compId);
+        };
+
+        const combComps = components.filter(c => c.type === 'gate' || c.type === 'junction');
+        combComps.forEach(c => visit(c.id));
+        return order;
+      };
+
+      const sortedCombinationalOrder = topologicalSortCombinational();
+
+      // 4. Generate C++ Code
+      let code = `// Automatically generated C++ code for DELD Logic Simulation\n`;
+      code += `#include <iostream>\n#include <vector>\n#include <string>\n#include <iomanip>\n\n`;
+
+      // Multiplexer helpers
+      code += `bool mux21(bool d0, bool d1, bool s) {\n    return s ? d1 : d0;\n}\n\n`;
+      code += `bool mux41(bool d0, bool d1, bool d2, bool d3, bool s0, bool s1) {\n`;
+      code += `    int sel = (s1 << 1) | s0;\n`;
+      code += `    switch(sel) {\n        case 0: return d0;\n        case 1: return d1;\n        case 2: return d2;\n        case 3: return d3;\n        default: return false;\n    }\n}\n\n`;
+      code += `bool mux81(bool d0, bool d1, bool d2, bool d3, bool d4, bool d5, bool d6, bool d7, bool s0, bool s1, bool s2) {\n`;
+      code += `    int sel = (s2 << 2) | (s1 << 1) | s0;\n`;
+      code += `    switch(sel) {\n        case 0: return d0;\n        case 1: return d1;\n        case 2: return d2;\n        case 3: return d3;\n        case 4: return d4;\n        case 5: return d5;\n        case 6: return d6;\n        case 7: return d7;\n        default: return false;\n    }\n}\n\n`;
+
+      // Encoder / Decoders helpers
+      code += `struct Encoder83Out { bool y0; bool y1; bool y2; };\n`;
+      code += `Encoder83Out encoder83(bool d0, bool d1, bool d2, bool d3, bool d4, bool d5, bool d6, bool d7) {\n`;
+      code += `    int outVal = 0;\n    bool inputs[8] = { d0, d1, d2, d3, d4, d5, d6, d7 };\n`;
+      code += `    for (int i = 0; i < 8; i++) { if (inputs[i]) outVal = i; }\n`;
+      code += `    return { (outVal & 1) != 0, ((outVal >> 1) & 1) != 0, ((outVal >> 2) & 1) != 0 };\n}\n\n`;
+
+      code += `struct PriorityEncoder84Out { bool y0; bool y1; bool y2; bool v; };\n`;
+      code += `PriorityEncoder84Out priorityEncoder84(bool d0, bool d1, bool d2, bool d3, bool d4, bool d5, bool d6, bool d7) {\n`;
+      code += `    int outVal = 0; bool valid = false;\n    bool inputs[8] = { d0, d1, d2, d3, d4, d5, d6, d7 };\n`;
+      code += `    for (int i = 0; i < 8; i++) { if (inputs[i]) { outVal = i; valid = true; } }\n`;
+      code += `    return { valid && (outVal & 1), valid && ((outVal >> 1) & 1), valid && ((outVal >> 2) & 1), valid };\n}\n\n`;
+
+      code += `struct Decoder38Out { bool y0; bool y1; bool y2; bool y3; bool y4; bool y5; bool y6; bool y7; };\n`;
+      code += `Decoder38Out decoder38(bool a, bool b, bool c) {\n`;
+      code += `    int sel = (c << 2) | (b << 1) | a;\n`;
+      code += `    return {\n        sel == 0, sel == 1, sel == 2, sel == 3,\n        sel == 4, sel == 5, sel == 6, sel == 7\n    };\n}\n\n`;
+
+      // Comparator helper
+      code += `struct ComparatorOut { bool aeb; bool agb; bool alb; };\n`;
+      code += `ComparatorOut comparator2bit(bool a1, bool a0, bool b1, bool b0) {\n`;
+      code += `    int a = (a1 << 1) | a0; int b = (b1 << 1) | b0;\n    return { a == b, a > b, a < b };\n}\n\n`;
+      code += `ComparatorOut comparator4bit(int a, int b) {\n    return { a == b, a > b, a < b };\n}\n\n`;
+
+      // Interactive binary input helper
+      code += `int getBinaryInput(const std::string& name) {\n`;
+      code += `    std::string input;\n`;
+      code += `    while (true) {\n`;
+      code += `        std::cout << "Enter " << name << " (0/1): ";\n`;
+      code += `        if (!(std::cin >> input)) {\n`;
+      code += `            std::cin.clear();\n`;
+      code += `            std::cin.ignore(10000, '\\n');\n`;
+      code += `            continue;\n`;
+      code += `        }\n`;
+      code += `        if (input == "0") return 0;\n`;
+      code += `        if (input == "1") return 1;\n`;
+      code += `        std::cout << "Invalid input. Please enter 0 or 1." << std::endl;\n`;
+      code += `    }\n`;
+      code += `}\n\n`;
+
+      if (!isSequential) {
+        // --- Combinational Evaluation function ---
+        code += `struct CircuitOutputs {\n`;
+        outputs.forEach(o => {
+          const fieldName = o.probeName || getCompPrefix(o);
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += `    int ${fieldName};\n`;
+          } else {
+            code += `    bool ${fieldName};\n`;
+          }
+        });
+        if (outputs.length === 0) code += `    bool dummy;\n`;
+        code += `};\n\n`;
+
+        code += `CircuitOutputs evaluateCircuit(`;
+        code += inputs.map(i => `bool ${i.probeName || getCompPrefix(i)}`).join(', ');
+        code += `) {\n`;
+
+        components.forEach(c => {
+          if (c.type === 'output') {
+            if (c.baseName === 'Seven Segment Display' || c.baseName === 'Hex Display') {
+              code += `    int ${getPinVarName(c, 0)} = 0;\n`;
+            } else {
+              code += `    bool ${getPinVarName(c, 0)} = false;\n`;
+            }
+          } else if (c.type !== 'input') {
+            c.outputs.forEach((out, idx) => {
+              code += `    bool ${getPinVarName(c, idx)} = false;\n`;
+            });
+          } else {
+            code += `    bool ${getPinVarName(c, 0)} = ${c.probeName || getCompPrefix(c)};\n`;
+          }
+        });
+        code += `\n`;
+
+        sortedCombinationalOrder.forEach(nId => {
+          const c = components.find(x => x.id === nId);
+          if (!c || c.type === 'input') return;
+
+          code += `    // ${c.name}\n`;
+          if (c.baseName === 'AND Gate') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} && ${getIn(c, 1)};\n`;
+          } else if (c.baseName === 'OR Gate') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} || ${getIn(c, 1)};\n`;
+          } else if (c.baseName === 'NOT Gate') {
+            code += `    ${getPinVarName(c, 0)} = !${getIn(c, 0)};\n`;
+          } else if (c.baseName === 'NAND Gate') {
+            code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} && ${getIn(c, 1)});\n`;
+          } else if (c.baseName === 'NOR Gate') {
+            code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} || ${getIn(c, 1)});\n`;
+          } else if (c.baseName === 'XOR Gate') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} ^ ${getIn(c, 1)};\n`;
+          } else if (c.baseName === 'XNOR Gate') {
+            code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} ^ ${getIn(c, 1)});\n`;
+          } else if (c.baseName === 'BUFFER' || c.baseName === 'Logic Probe' || c.baseName === 'LED') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)};\n`;
+          } else if (c.baseName === 'Tri-State Buffer') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 1)} ? ${getIn(c, 0)} : false;\n`;
+          } else if (c.baseName === 'Junction') {
+            code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)};\n    ${getPinVarName(c, 1)} = ${getIn(c, 0)};\n    ${getPinVarName(c, 2)} = ${getIn(c, 0)};\n`;
+          } else if (c.baseName === 'Configurable Multiplexer') {
+            const inputCount = 1 << c.selectBits;
+            const ds = Array(inputCount).fill(0).map((_, idx) => getIn(c, idx));
+            const ss = Array(c.selectBits).fill(0).map((_, idx) => getIn(c, inputCount + idx));
+            if (c.selectBits == 1) {
+              code += `    ${getPinVarName(c, 0)} = mux21(${ds[0]}, ${ds[1]}, ${ss[0]});\n`;
+            } else if (c.selectBits == 2) {
+              code += `    ${getPinVarName(c, 0)} = mux41(${ds[0]}, ${ds[1]}, ${ds[2]}, ${ds[3]}, ${ss[0]}, ${ss[1]});\n`;
+            } else if (c.selectBits == 3) {
+              code += `    ${getPinVarName(c, 0)} = mux81(${ds[0]}, ${ds[1]}, ${ds[2]}, ${ds[3]}, ${ds[4]}, ${ds[5]}, ${ds[6]}, ${ds[7]}, ${ss[0]}, ${ss[1]}, ${ss[2]});\n`;
+            }
+          } else if (c.baseName === 'Configurable Demultiplexer') {
+            const outputCount = 1 << c.selectBits;
+            const inpVal = getIn(c, 0);
+            const ss = Array(c.selectBits).fill(0).map((_, idx) => getIn(c, 1 + idx));
+            code += `    {\n        int sel = 0;\n`;
+            ss.forEach((s, idx) => {
+              code += `        sel |= (${s} << ${idx});\n`;
+            });
+            for (let i = 0; i < outputCount; i++) {
+              code += `        ${getPinVarName(c, i)} = (sel == ${i}) ? ${inpVal} : false;\n`;
+            }
+            code += `    }\n`;
+          } else if (c.baseName === '8:3 Encoder') {
+            code += `    {\n        Encoder83Out r = encoder83(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)}, ${getIn(c, 4)}, ${getIn(c, 5)}, ${getIn(c, 6)}, ${getIn(c, 7)});\n`;
+            code += `        ${getPinVarName(c, 0)} = r.y2; ${getPinVarName(c, 1)} = r.y1; ${getPinVarName(c, 2)} = r.y0;\n    }\n`;
+          } else if (c.baseName === '8:3 Priority Encoder') {
+            code += `    {\n        PriorityEncoder84Out r = priorityEncoder84(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)}, ${getIn(c, 4)}, ${getIn(c, 5)}, ${getIn(c, 6)}, ${getIn(c, 7)});\n`;
+            code += `        ${getPinVarName(c, 0)} = r.y2; ${getPinVarName(c, 1)} = r.y1; ${getPinVarName(c, 2)} = r.y0; ${getPinVarName(c, 3)} = r.v;\n    }\n`;
+          } else if (c.baseName === '3:8 Decoder') {
+            code += `    {\n        Decoder38Out r = decoder38(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)});\n`;
+            for (let i = 0; i < 8; i++) {
+              code += `        ${getPinVarName(c, i)} = r.y${i};\n`;
+            }
+            code += `    }\n`;
+          } else if (c.baseName === '2-bit Comparator') {
+            code += `    {\n        ComparatorOut r = comparator2bit(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)});\n`;
+            code += `        ${getPinVarName(c, 0)} = r.aeb; ${getPinVarName(c, 1)} = r.agb; ${getPinVarName(c, 2)} = r.alb;\n    }\n`;
+          } else if (c.baseName === '4-bit Magnitude Comparator') {
+            code += `    {\n        int a = (${getIn(c, 0)}<<3)|(${getIn(c, 1)}<<2)|(${getIn(c, 2)}<<1)|${getIn(c, 3)};\n`;
+            code += `        int b = (${getIn(c, 4)}<<3)|(${getIn(c, 5)}<<2)|(${getIn(c, 6)}<<1)|${getIn(c, 7)};\n`;
+            code += `        ComparatorOut r = comparator4bit(a, b);\n`;
+            code += `        ${getPinVarName(c, 0)} = r.aeb; ${getPinVarName(c, 1)} = r.agb; ${getPinVarName(c, 2)} = r.alb;\n    }\n`;
+          } else if (c.baseName === 'Seven Segment Display' || c.baseName === 'Hex Display') {
+            code += `    ${getPinVarName(c, 0)} = (${getIn(c, 3)} << 3) | (${getIn(c, 2)} << 2) | (${getIn(c, 1)} << 1) | ${getIn(c, 0)};\n`;
+          }
+        });
+
+        // Evaluate outputs variables
+        outputs.forEach(o => {
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += `    ${getPinVarName(o, 0)} = (${getIn(o, 3)} << 3) | (${getIn(o, 2)} << 2) | (${getIn(o, 1)} << 1) | ${getIn(o, 0)};\n`;
+          } else {
+            code += `    ${getPinVarName(o, 0)} = ${getIn(o, 0)};\n`;
+          }
+        });
+
+        code += `\n    return {\n`;
+        outputs.forEach((o, oIdx) => {
+          code += `        ${getPinVarName(o, 0)}${oIdx < outputs.length - 1 ? ',' : ''} // ${o.probeName || o.name}\n`;
+        });
+        if (outputs.length === 0) code += `        false\n`;
+        code += `    };\n}\n\n`;
+
+        // Main block for Combinational
+        code += `int main() {\n`;
+        code += `    std::cout << "===== DELD Circuit Simulator =====" << std::endl << std::endl;\n`;
+        
+        inputs.forEach(i => {
+          const varName = `v_${i.probeName || getCompPrefix(i)}`;
+          if (i.baseName === 'VCC') {
+            code += `    bool ${varName} = true;\n`;
+          } else if (i.baseName === 'GND') {
+            code += `    bool ${varName} = false;\n`;
+          } else {
+            code += `    bool ${varName} = getBinaryInput("${i.probeName || getCompPrefix(i)}");\n`;
+          }
+        });
+        
+        code += `\n    std::cout << "\\nProcessing..." << std::endl;\n`;
+        code += `    CircuitOutputs out = evaluateCircuit(${inputs.map(i => `v_${i.probeName || getCompPrefix(i)}`).join(', ')});\n\n`;
+        code += `    std::cout << "\\n===== Circuit Outputs =====" << std::endl << std::endl;\n`;
+        
+        outputs.forEach(o => {
+          const fieldName = o.probeName || getCompPrefix(o);
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += `    std::cout << "${fieldName} : ";\n`;
+            code += `    if (out.${fieldName} >= 0 && out.${fieldName} <= 9) std::cout << out.${fieldName};\n`;
+            code += `    else if (out.${fieldName} >= 10 && out.${fieldName} <= 15) std::cout << (char)('A' + out.${fieldName} - 10);\n`;
+            code += `    else std::cout << "-";\n`;
+            code += `    std::cout << std::endl;\n`;
+          } else {
+            code += `    std::cout << "${fieldName} : " << out.${fieldName} << std::endl;\n`;
+          }
+        });
+        
+        // Print truth table if inputs.length <= 8
+        if (inputs.length > 0 && inputs.length <= 8) {
+          code += `\n    std::cout << "\\n===== Truth Table =====" << std::endl << std::endl;\n`;
+          const colNames = [...inputs.map(i => i.probeName || getCompPrefix(i)), ...outputs.map(o => o.probeName || getCompPrefix(o))];
+          code += `    std::cout`;
+          colNames.forEach(h => {
+            code += ` << std::setw(12) << "${h}"`;
+          });
+          code += ` << std::endl;\n`;
+          code += `    std::cout << std::string(${colNames.length * 12}, '-') << std::endl;\n\n`;
+          
+          inputs.forEach(i => {
+            const varName = `t_${i.probeName || getCompPrefix(i)}`;
+            code += `    for (int ${varName} = 0; ${varName} <= 1; ++${varName}) {\n`;
+          });
+          
+          code += `        CircuitOutputs t_out = evaluateCircuit(${inputs.map(i => `t_${i.probeName || getCompPrefix(i)}`).join(', ')});\n`;
+          code += `        std::cout`;
+          inputs.forEach(i => {
+            code += ` << std::setw(12) << t_${i.probeName || getCompPrefix(i)}`;
+          });
+          outputs.forEach(o => {
+            const fieldName = o.probeName || getCompPrefix(o);
+            if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+              code += ` << std::setw(12) << (t_out.${fieldName} >= 0 && t_out.${fieldName} <= 9 ? std::to_string(t_out.${fieldName}) : (t_out.${fieldName} >= 10 && t_out.${fieldName} <= 15 ? std::string(1, (char)('A' + t_out.${fieldName} - 10)) : "-"))`;
+            } else {
+              code += ` << std::setw(12) << t_out.${fieldName}`;
+            }
+          });
+          code += ` << std::endl;\n`;
+          inputs.forEach(() => {
+            code += `    }\n`;
+          });
+        }
+        
+        code += `    return 0;\n}\n`;
+      } else {
+        // --- Sequential Circuit State Machine structure ---
+        code += `struct CircuitState {\n`;
+        components.forEach(c => {
+          if (c.type === 'sequential') {
+            const prefix = getCompPrefix(c);
+            if (c.baseName === 'SR Latch') {
+              code += `    bool ${prefix}_Q = false;\n`;
+            } else if (['SR Flip-Flop', 'JK Flip-Flop', 'D Flip-Flop', 'T Flip-Flop'].includes(c.baseName)) {
+              code += `    bool ${prefix}_Q = false;\n`;
+              code += `    bool ${prefix}_prev_CLK = false;\n`;
+            } else if (c.baseName === '4-bit Register' || c.baseName === 'Universal Shift Register' || c.baseName === 'SIPO Shift Register' || c.baseName === 'PIPO Shift Register' || c.baseName === 'Ring Counter' || c.baseName === 'Johnson Counter') {
+              code += `    bool ${prefix}_regVal[4] = {false, false, false, false};\n`;
+              code += `    bool ${prefix}_prev_CLK = false;\n`;
+            } else if (c.baseName === '8-bit Register') {
+              code += `    bool ${prefix}_regVal[8] = {false, false, false, false, false, false, false, false};\n`;
+              code += `    bool ${prefix}_prev_CLK = false;\n`;
+            } else if (c.baseName === 'SISO Shift Register' || c.baseName === 'PISO Shift Register') {
+              code += `    bool ${prefix}_regVal[4] = {false, false, false, false};\n`;
+              code += `    bool ${prefix}_prev_CLK = false;\n`;
+            } else if (['Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter'].includes(c.baseName)) {
+              code += `    int ${prefix}_count = 0;\n`;
+              code += `    bool ${prefix}_prev_CLK = false;\n`;
+            }
+          }
+        });
+        code += `};\n\n`;
+
+        code += `struct CircuitOutputs {\n`;
+        outputs.forEach(o => {
+          const fieldName = o.probeName || getCompPrefix(o);
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += `    int ${fieldName};\n`;
+          } else {
+            code += `    bool ${fieldName};\n`;
+          }
+        });
+        if (outputs.length === 0) code += `    bool dummy;\n`;
+        code += `};\n\n`;
+
+        const seqInputs = inputs.filter(i => i.baseName !== 'Clock');
+
+        code += `CircuitOutputs stepCircuit(CircuitState& state, \n`;
+        const paramList = seqInputs.map(i => `bool ${i.probeName || getCompPrefix(i)}`).join(', ');
+        code += (paramList ? paramList + ', ' : '') + `bool system_CLK) {\n`;
+
+        components.forEach(c => {
+          if (c.type === 'output') {
+            if (c.baseName === 'Seven Segment Display' || c.baseName === 'Hex Display') {
+              code += `    int ${getPinVarName(c, 0)} = 0;\n`;
+            } else {
+              code += `    bool ${getPinVarName(c, 0)} = false;\n`;
+            }
+          } else if (c.type !== 'input') {
+            c.outputs.forEach((out, idx) => {
+              code += `    bool ${getPinVarName(c, idx)} = false;\n`;
+            });
+          } else {
+            code += `    bool ${getPinVarName(c, 0)} = ${c.baseName === 'Clock' ? 'system_CLK' : (c.probeName || getCompPrefix(c))};\n`;
+          }
+        });
+        code += `\n`;
+
+        code += `    // Initialize sequential outputs from state\n`;
+        components.forEach(c => {
+          if (c.type === 'sequential') {
+            const prefix = getCompPrefix(c);
+            if (['SR Latch', 'SR Flip-Flop', 'JK Flip-Flop', 'D Flip-Flop', 'T Flip-Flop'].includes(c.baseName)) {
+              code += `    ${getPinVarName(c, 0)} = state.${prefix}_Q;\n`;
+              code += `    ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n`;
+            } else if (c.baseName === '4-bit Register' || c.baseName === 'Universal Shift Register' || c.baseName === 'SIPO Shift Register' || c.baseName === 'PIPO Shift Register' || c.baseName === 'Ring Counter' || c.baseName === 'Johnson Counter') {
+              for (let i = 0; i < 4; i++) {
+                code += `    ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+            } else if (c.baseName === '8-bit Register') {
+              for (let i = 0; i < 8; i++) {
+                code += `    ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+            } else if (c.baseName === 'SISO Shift Register' || c.baseName === 'PISO Shift Register') {
+              code += `    ${getPinVarName(c, 0)} = state.${prefix}_regVal[3];\n`;
+            } else if (['Ripple Counter', 'Synchronous Counter', 'Up Counter', 'Down Counter', 'Up/Down Counter'].includes(c.baseName)) {
+              code += `    ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `    ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `    ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `    ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n`;
+            }
+          }
+        });
+        code += `\n`;
+
+        sortedCombinationalOrder.forEach(nId => {
+          const c = components.find(x => x.id === nId);
+          if (!c || c.type === 'input') return;
+
+          code += `    // ${c.name}\n`;
+          if (c.type === 'sequential') {
+            const prefix = getCompPrefix(c);
+            if (c.baseName === 'SR Latch') {
+              code += `    {\n        bool s = ${getIn(c, 0)}, r = ${getIn(c, 1)};\n`;
+              code += `        if (s && !r) state.${prefix}_Q = true;\n        else if (!s && r) state.${prefix}_Q = false;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_Q; ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n    }\n`;
+            } else if (c.baseName === 'SR Flip-Flop') {
+              code += `    {\n        bool clkVal = ${getIn(c, 2)};\n`;
+              code += `        if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            bool s = ${getIn(c, 0)}, r = ${getIn(c, 1)};\n`;
+              code += `            if (s && !r) state.${prefix}_Q = true;\n            else if (!s && r) state.${prefix}_Q = false;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_Q; ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n    }\n`;
+            } else if (c.baseName === 'JK Flip-Flop') {
+              code += `    {\n        bool clkVal = ${getIn(c, 2)};\n`;
+              code += `        if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            bool j = ${getIn(c, 0)}, k = ${getIn(c, 1)};\n`;
+              code += `            if (j && !k) state.${prefix}_Q = true;\n            else if (!j && k) state.${prefix}_Q = false;\n            else if (j && k) state.${prefix}_Q = !state.${prefix}_Q;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_Q; ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n    }\n`;
+            } else if (c.baseName === 'D Flip-Flop') {
+              code += `    {\n        bool clkVal = ${getIn(c, 1)};\n`;
+              code += `        if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_Q = ${getIn(c, 0)};\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_Q; ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n    }\n`;
+            } else if (c.baseName === 'T Flip-Flop') {
+              code += `    {\n        bool clkVal = ${getIn(c, 1)};\n`;
+              code += `        if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 0)}) state.${prefix}_Q = !state.${prefix}_Q;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_Q; ${getPinVarName(c, 1)} = !state.${prefix}_Q;\n    }\n`;
+            } else if (c.baseName === '4-bit Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 4)};\n`;
+              code += `        if (${getIn(c, 5)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 6)}) {\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `                state.${prefix}_regVal[${i}] = ${getIn(c, i)};\n`;
+              }
+              code += `            }\n        }\n        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === '8-bit Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 8)};\n`;
+              code += `        if (${getIn(c, 9)}) {\n            for(int i=0;i<8;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 10)}) {\n`;
+              for (let i = 0; i < 8; i++) {
+                code += `                state.${prefix}_regVal[${i}] = ${getIn(c, i)};\n`;
+              }
+              code += `            }\n        }\n        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 8; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === 'Universal Shift Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 8)};\n`;
+              code += `        if (${getIn(c, 9)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            int s1 = ${getIn(c, 0)}; int s0 = ${getIn(c, 1)};\n`;
+              code += `            if (s1 == 0 && s0 == 1) {\n`;
+              code += `                bool temp = state.${prefix}_regVal[0];\n`;
+              code += `                state.${prefix}_regVal[0] = ${getIn(c, 2)};\n`;
+              code += `                state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `                state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `                state.${prefix}_regVal[1] = temp;\n`;
+              code += `            } else if (s1 == 1 && s0 == 0) {\n`;
+              code += `                bool temp = state.${prefix}_regVal[3];\n`;
+              code += `                state.${prefix}_regVal[3] = ${getIn(c, 3)};\n`;
+              code += `                state.${prefix}_regVal[0] = state.${prefix}_regVal[1];\n`;
+              code += `                state.${prefix}_regVal[1] = state.${prefix}_regVal[2];\n`;
+              code += `                state.${prefix}_regVal[2] = temp;\n`;
+              code += `            } else if (s1 == 1 && s0 == 1) {\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `                state.${prefix}_regVal[${i}] = ${getIn(c, 4 + i)};\n`;
+              }
+              code += `            }\n        }\n        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === 'SISO Shift Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 1)};\n`;
+              code += `        if (${getIn(c, 2)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `            state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `            state.${prefix}_regVal[1] = state.${prefix}_regVal[0];\n`;
+              code += `            state.${prefix}_regVal[0] = ${getIn(c, 0)};\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_regVal[3];\n    }\n`;
+            } else if (c.baseName === 'SIPO Shift Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 1)};\n`;
+              code += `        if (${getIn(c, 2)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `            state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `            state.${prefix}_regVal[1] = state.${prefix}_regVal[0];\n`;
+              code += `            state.${prefix}_regVal[0] = ${getIn(c, 0)};\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === 'PISO Shift Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 5)};\n`;
+              code += `        if (${getIn(c, 6)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 4)} == 0) {\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `                state.${prefix}_regVal[${i}] = ${getIn(c, i)};\n`;
+              }
+              code += `            } else {\n`;
+              code += `                state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `                state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `                state.${prefix}_regVal[1] = state.${prefix}_regVal[0];\n`;
+              code += `                state.${prefix}_regVal[0] = false;\n            }\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = state.${prefix}_regVal[3];\n    }\n`;
+            } else if (c.baseName === 'PIPO Shift Register') {
+              code += `    {\n        bool clkVal = ${getIn(c, 4)};\n`;
+              code += `        if (${getIn(c, 5)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `            state.${prefix}_regVal[${i}] = ${getIn(c, i)};\n`;
+              }
+              code += `        }\n        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === 'Ripple Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            state.${prefix}_count = 0;\n`;
+              code += `        } else if (!clkVal && state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_count = (state.${prefix}_count + 1) % 16;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `        ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `        ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `        ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n    }\n`;
+            } else if (c.baseName === 'Synchronous Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            state.${prefix}_count = 0;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 2)}) state.${prefix}_count = (state.${prefix}_count + 1) % 16;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `        ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `        ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `        ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n    }\n`;
+            } else if (c.baseName === 'Up Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            state.${prefix}_count = 0;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_count = (state.${prefix}_count + 1) % 16;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `        ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `        ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `        ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n    }\n`;
+            } else if (c.baseName === 'Down Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            state.${prefix}_count = 0;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            state.${prefix}_count = (state.${prefix}_count - 1 + 16) % 16;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `        ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `        ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `        ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n    }\n`;
+            } else if (c.baseName === 'Up/Down Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            state.${prefix}_count = 0;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            if (${getIn(c, 2)}) state.${prefix}_count = (state.${prefix}_count + 1) % 16;\n`;
+              code += `            else state.${prefix}_count = (state.${prefix}_count - 1 + 16) % 16;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              code += `        ${getPinVarName(c, 0)} = (state.${prefix}_count >> 3) & 1;\n`;
+              code += `        ${getPinVarName(c, 1)} = (state.${prefix}_count >> 2) & 1;\n`;
+              code += `        ${getPinVarName(c, 2)} = (state.${prefix}_count >> 1) & 1;\n`;
+              code += `        ${getPinVarName(c, 3)} = (state.${prefix}_count >> 0) & 1;\n    }\n`;
+            } else if (c.baseName === 'Ring Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n`;
+              code += `            state.${prefix}_regVal[0]=true; state.${prefix}_regVal[1]=false; state.${prefix}_regVal[2]=false; state.${prefix}_regVal[3]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            bool temp = state.${prefix}_regVal[3];\n`;
+              code += `            state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `            state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `            state.${prefix}_regVal[1] = state.${prefix}_regVal[0];\n`;
+              code += `            state.${prefix}_regVal[0] = temp;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === 'Johnson Counter') {
+              code += `    {\n        bool clkVal = ${getIn(c, 0)};\n`;
+              code += `        if (${getIn(c, 1)}) {\n            for(int i=0;i<4;i++) state.${prefix}_regVal[i]=false;\n`;
+              code += `        } else if (clkVal && !state.${prefix}_prev_CLK) {\n`;
+              code += `            bool feedback = !state.${prefix}_regVal[3];\n`;
+              code += `            state.${prefix}_regVal[3] = state.${prefix}_regVal[2];\n`;
+              code += `            state.${prefix}_regVal[2] = state.${prefix}_regVal[1];\n`;
+              code += `            state.${prefix}_regVal[1] = state.${prefix}_regVal[0];\n`;
+              code += `            state.${prefix}_regVal[0] = feedback;\n        }\n`;
+              code += `        state.${prefix}_prev_CLK = clkVal;\n`;
+              for (let i = 0; i < 4; i++) {
+                code += `        ${getPinVarName(c, i)} = state.${prefix}_regVal[${i}];\n`;
+              }
+              code += `    }\n`;
+            }
+          } else {
+            // Combinational Blocks inside Sequential Simulation
+            if (c.baseName === 'AND Gate') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} && ${getIn(c, 1)};\n`;
+            } else if (c.baseName === 'OR Gate') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} || ${getIn(c, 1)};\n`;
+            } else if (c.baseName === 'NOT Gate') {
+              code += `    ${getPinVarName(c, 0)} = !${getIn(c, 0)};\n`;
+            } else if (c.baseName === 'NAND Gate') {
+              code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} && ${getIn(c, 1)});\n`;
+            } else if (c.baseName === 'NOR Gate') {
+              code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} || ${getIn(c, 1)});\n`;
+            } else if (c.baseName === 'XOR Gate') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)} ^ ${getIn(c, 1)};\n`;
+            } else if (c.baseName === 'XNOR Gate') {
+              code += `    ${getPinVarName(c, 0)} = !(${getIn(c, 0)} ^ ${getIn(c, 1)});\n`;
+            } else if (c.baseName === 'BUFFER' || c.baseName === 'Logic Probe' || c.baseName === 'LED') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)};\n`;
+            } else if (c.baseName === 'Tri-State Buffer') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 1)} ? ${getIn(c, 0)} : false;\n`;
+            } else if (c.baseName === 'Junction') {
+              code += `    ${getPinVarName(c, 0)} = ${getIn(c, 0)};\n    ${getPinVarName(c, 1)} = ${getIn(c, 0)};\n    ${getPinVarName(c, 2)} = ${getIn(c, 0)};\n`;
+            } else if (c.baseName === 'Configurable Multiplexer') {
+              const inputCount = 1 << c.selectBits;
+              const ds = Array(inputCount).fill(0).map((_, idx) => getIn(c, idx));
+              const ss = Array(c.selectBits).fill(0).map((_, idx) => getIn(c, inputCount + idx));
+              if (c.selectBits == 1) {
+                code += `    ${getPinVarName(c, 0)} = mux21(${ds[0]}, ${ds[1]}, ${ss[0]});\n`;
+              } else if (c.selectBits == 2) {
+                code += `    ${getPinVarName(c, 0)} = mux41(${ds[0]}, ${ds[1]}, ${ds[2]}, ${ds[3]}, ${ss[0]}, ${ss[1]});\n`;
+              } else if (c.selectBits == 3) {
+                code += `    ${getPinVarName(c, 0)} = mux81(${ds[0]}, ${ds[1]}, ${ds[2]}, ${ds[3]}, ${ds[4]}, ${ds[5]}, ${ds[6]}, ${ds[7]}, ${ss[0]}, ${ss[1]}, ${ss[2]});\n`;
+              }
+            } else if (c.baseName === 'Configurable Demultiplexer') {
+              const outputCount = 1 << c.selectBits;
+              const inpVal = getIn(c, 0);
+              const ss = Array(c.selectBits).fill(0).map((_, idx) => getIn(c, 1 + idx));
+              code += `    {\n        int sel = 0;\n`;
+              ss.forEach((s, idx) => {
+                code += `        sel |= (${s} << ${idx});\n`;
+              });
+              for (let i = 0; i < outputCount; i++) {
+                code += `        ${getPinVarName(c, i)} = (sel == ${i}) ? ${inpVal} : false;\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === '8:3 Encoder') {
+              code += `    {\n        Encoder83Out r = encoder83(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)}, ${getIn(c, 4)}, ${getIn(c, 5)}, ${getIn(c, 6)}, ${getIn(c, 7)});\n`;
+              code += `        ${getPinVarName(c, 0)} = r.y2; ${getPinVarName(c, 1)} = r.y1; ${getPinVarName(c, 2)} = r.y0;\n    }\n`;
+            } else if (c.baseName === '8:3 Priority Encoder') {
+              code += `    {\n        PriorityEncoder84Out r = priorityEncoder84(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)}, ${getIn(c, 4)}, ${getIn(c, 5)}, ${getIn(c, 6)}, ${getIn(c, 7)});\n`;
+              code += `        ${getPinVarName(c, 0)} = r.y2; ${getPinVarName(c, 1)} = r.y1; ${getPinVarName(c, 2)} = r.y0; ${getPinVarName(c, 3)} = r.v;\n    }\n`;
+            } else if (c.baseName === '3:8 Decoder') {
+              code += `    {\n        Decoder38Out r = decoder38(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)});\n`;
+              for (let i = 0; i < 8; i++) {
+                code += `        ${getPinVarName(c, i)} = r.y${i};\n`;
+              }
+              code += `    }\n`;
+            } else if (c.baseName === '2-bit Comparator') {
+              code += `    {\n        ComparatorOut r = comparator2bit(${getIn(c, 0)}, ${getIn(c, 1)}, ${getIn(c, 2)}, ${getIn(c, 3)});\n`;
+              code += `        ${getPinVarName(c, 0)} = r.aeb; ${getPinVarName(c, 1)} = r.agb; ${getPinVarName(c, 2)} = r.alb;\n    }\n`;
+            } else if (c.baseName === '4-bit Magnitude Comparator') {
+              code += `    {\n        int a = (${getIn(c, 0)}<<3)|(${getIn(c, 1)}<<2)|(${getIn(c, 2)}<<1)|${getIn(c, 3)};\n`;
+              code += `        int b = (${getIn(c, 4)}<<3)|(${getIn(c, 5)}<<2)|(${getIn(c, 6)}<<1)|${getIn(c, 7)};\n`;
+              code += `        ComparatorOut r = comparator4bit(a, b);\n`;
+              code += `        ${getPinVarName(c, 0)} = r.aeb; ${getPinVarName(c, 1)} = r.agb; ${getPinVarName(c, 2)} = r.alb;\n    }\n`;
+            } else if (c.baseName === 'Seven Segment Display' || c.baseName === 'Hex Display') {
+              code += `    ${getPinVarName(c, 0)} = (${getIn(c, 3)} << 3) | (${getIn(c, 2)} << 2) | (${getIn(c, 1)} << 1) | ${getIn(c, 0)};\n`;
+            }
+          }
+        });
+
+        // Evaluate outputs variables
+        outputs.forEach(o => {
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += `    ${getPinVarName(o, 0)} = (${getIn(o, 3)} << 3) | (${getIn(o, 2)} << 2) | (${getIn(o, 1)} << 1) | ${getIn(o, 0)};\n`;
+          } else {
+            code += `    ${getPinVarName(o, 0)} = ${getIn(o, 0)};\n`;
+          }
+        });
+
+        code += `\n    return {\n`;
+        outputs.forEach((o, oIdx) => {
+          code += `        ${getPinVarName(o, 0)}${oIdx < outputs.length - 1 ? ',' : ''} // ${o.probeName || o.name}\n`;
+        });
+        if (outputs.length === 0) code += `        false\n`;
+        code += `    };\n}\n\n`;
+
+        // Sequential main loop block
+        code += `int main() {\n    CircuitState state;\n`;
+        code += `    std::cout << "===== DELD Circuit Simulator =====" << std::endl << std::endl;\n`;
+        
+        seqInputs.forEach(i => {
+          const varName = `v_${i.probeName || getCompPrefix(i)}`;
+          if (i.baseName === 'VCC') {
+            code += `    bool ${varName} = true;\n`;
+          } else if (i.baseName === 'GND') {
+            code += `    bool ${varName} = false;\n`;
+          } else {
+            code += `    bool ${varName} = getBinaryInput("${i.probeName || getCompPrefix(i)}");\n`;
+          }
+        });
+        code += `\n`;
+
+        code += `    std::cout << "\\nProcessing..." << std::endl;\n`;
+        code += `    std::cout << std::endl << "--- Sequential Simulation Run (20 Cycles) ---" << std::endl;\n`;
+        const colNames = ['Cycle', 'system_CLK', ...seqInputs.map(i => i.probeName || getCompPrefix(i)), ...outputs.map(o => o.probeName || getCompPrefix(o))];
+        code += `    std::cout`;
+        colNames.forEach(h => {
+          code += ` << std::setw(12) << "${h}"`;
+        });
+        code += ` << std::endl;\n`;
+        code += `    std::cout << std::string(${colNames.length * 12}, '-') << std::endl;\n\n`;
+
+        code += `    for (int cycle = 1; cycle <= 20; ++cycle) {\n`;
+        code += `        bool system_CLK = (cycle % 2 == 0);\n`;
+        code += `        stepCircuit(state, ${seqInputs.map(i => `v_${i.probeName || getCompPrefix(i)}`).join(', ')}${seqInputs.length ? ', ' : ''}system_CLK);\n`;
+        code += `        CircuitOutputs out = stepCircuit(state, ${seqInputs.map(i => `v_${i.probeName || getCompPrefix(i)}`).join(', ')}${seqInputs.length ? ', ' : ''}system_CLK);\n\n`;
+
+        code += `        std::cout << std::setw(12) << cycle << std::setw(12) << system_CLK`;
+        seqInputs.forEach(i => {
+          code += ` << std::setw(12) << v_${i.probeName || getCompPrefix(i)}`;
+        });
+        outputs.forEach(o => {
+          const fieldName = o.probeName || getCompPrefix(o);
+          if (o.baseName === 'Seven Segment Display' || o.baseName === 'Hex Display') {
+            code += ` << std::setw(12) << (out.${fieldName} >= 0 && out.${fieldName} <= 9 ? std::to_string(out.${fieldName}) : (out.${fieldName} >= 10 && out.${fieldName} <= 15 ? std::string(1, (char)('A' + out.${fieldName} - 10)) : "-"))`;
+          } else {
+            code += ` << std::setw(12) << out.${fieldName}`;
+          }
+        });
+        code += ` << std::endl;\n    }\n    return 0;\n}\n`;
+      }
+
+      generatedCPPCode = code;
+      document.getElementById('cpp-code-block').textContent = code;
+    }
+
+    function copyCPPCode() {
+      if (!generatedCPPCode) return;
+      navigator.clipboard.writeText(generatedCPPCode).then(() => alert('C++ Code copied to clipboard.'));
+    }
+
+    function downloadCPPCode() {
+      if (!generatedCPPCode) return;
+      const blob = new Blob([generatedCPPCode], { type: 'text/x-c++src;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', 'circuit_simulation.cpp');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- AR Mode launching ---
+    function openARModal() { document.getElementById('arModal').classList.add('active'); }
+    function closeARModal() { document.getElementById('arModal').classList.remove('active'); }
+    function promptSendToUnity() {
+      if (!lastExport) exportCircuitToClipboard();
+      const url = prompt('Enter HTTP endpoint for Unity to receive JSON (example: http://192.168.1.50:5000/receive):');
+      if (!url) return;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: lastExport || JSON.stringify(components)
+      }).then(r => {
+        if (r.ok) alert('Sent to Unity successfully!');
+        else alert('Send failed with error status: ' + r.status);
+      }).catch(err => alert('Network Error: ' + err.message));
+    }
+
+    // --- Probe / variables naming ---
+    function assignProbeNames() {
+      const letters = (n) => Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i));
+      const inputs = components.filter(c => c.type === 'input');
+      const gates = components.filter(c => c.type === 'gate' || c.type === 'sequential');
+      const outputs = components.filter(c => c.type === 'output');
+
+      inputs.forEach((c, i) => c.probeName = letters(inputs.length)[i]);
+      gates.forEach((c, i) => c.probeName = letters(gates.length)[i]);
+      outputs.forEach((c, i) => c.probeName = letters(outputs.length)[i]);
+    }
+
+    // --- Keyboard Bindings Setup (Delete, Undo, Redo, Copy, Paste) ---
+    function setupKeyboardBindings() {
+      window.addEventListener('keydown', e => {
+        const isInput = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+        if (isInput) return;
+
+        // Delete / Backspace
+        if (e.code === 'Delete' || e.code === 'Backspace') {
+          e.preventDefault();
+          deleteSelected();
+        }
+
+        // Copy: Ctrl+C
+        if (e.ctrlKey && e.code === 'KeyC') {
+          e.preventDefault();
+          copySelected();
+        }
+
+        // Paste: Ctrl+V
+        if (e.ctrlKey && e.code === 'KeyV') {
+          e.preventDefault();
+          pasteSelected();
+        }
+
+        // Duplicate: Ctrl+D
+        if (e.ctrlKey && e.code === 'KeyD') {
+          e.preventDefault();
+          duplicateSelected();
+        }
+
+        // Undo: Ctrl+Z
+        if (e.ctrlKey && e.code === 'KeyZ') {
+          e.preventDefault();
+          undo();
+        }
+
+        // Redo: Ctrl+Y
+        if (e.ctrlKey && e.code === 'KeyY') {
+          e.preventDefault();
+          redo();
+        }
+
+        // Rotation: R
+        if (e.code === 'KeyR') {
+          e.preventDefault();
+          rotateSelected();
+        }
+      });
+    }
+
+    // --- Viewport Drag Panning and Zoom Bindings ---
+    function setupViewportPanning() {
+      const viewport = document.getElementById('canvas-viewport');
+      const container = document.getElementById('canvas-container');
+
+      viewport.addEventListener('wheel', e => {
+        e.preventDefault();
+        const factor = 1.1;
+        let nextZoom = zoom;
+        if (e.deltaY < 0) {
+          nextZoom *= factor;
+        } else {
+          nextZoom /= factor;
+        }
+        applyZoom(nextZoom, e.clientX, e.clientY);
+      });
+
+      viewport.addEventListener('mousedown', e => {
+        const isBg = e.target.id === 'canvas-viewport' || e.target.id === 'canvas-container' || e.target.id === 'empty-state';
+
+        if (e.button === 1 || (e.button === 0 && (isBg || spacePressed))) {
+          isPanning = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          startPanX = panX;
+          startPanY = panY;
+          viewport.style.cursor = 'grabbing';
+          e.preventDefault();
+          e.stopPropagation();
+        } else if (e.button === 0 && isBg) {
+          clearSelections();
+          isSelecting = true;
+          const coords = getLocalCoords(e.clientX, e.clientY);
+          selStartX = coords.x;
+          selStartY = coords.y;
+          createSelectionBox(selStartX, selStartY);
+          e.preventDefault();
+        }
+      });
+
+      viewport.addEventListener('mousemove', e => {
+        if (isPanning) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          panX = startPanX + dx;
+          panY = startPanY + dy;
+          container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+          drawWires();
+        } else if (isSelecting) {
+          const coords = getLocalCoords(e.clientX, e.clientY);
+          updateSelectionBox(coords.x, coords.y);
+        }
+      });
+
+      viewport.addEventListener('mouseup', () => {
+        if (isPanning) {
+          isPanning = false;
+          viewport.style.cursor = 'default';
+        }
+        if (isSelecting) {
+          isSelecting = false;
+          finishSelection();
+        }
+      });
+
+      // Space pan listener
+      window.addEventListener('keydown', e => {
+        if (e.code === 'Space') {
+          spacePressed = true;
+          const isInput = document.activeElement.tagName === 'INPUT';
+          if (!isInput) viewport.style.cursor = 'grab';
+        }
+      });
+
+      window.addEventListener('keyup', e => {
+        if (e.code === 'Space') {
+          spacePressed = false;
+          viewport.style.cursor = 'default';
+        }
+      });
+    }
+
+    // --- Selection Rectangle visual element helpers ---
+    function createSelectionBox(x, y) {
+      const container = document.getElementById('canvas-container');
+      let box = document.getElementById('selection-marquee');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'selection-marquee';
+        box.style.position = 'absolute';
+        box.style.border = '1px dashed var(--accent)';
+        box.style.background = 'rgba(99, 102, 241, 0.08)';
+        box.style.pointerEvents = 'none';
+        box.style.zIndex = '1000';
+        container.appendChild(box);
+      }
+      box.style.left = x + 'px';
+      box.style.top = y + 'px';
+      box.style.width = '0px';
+      box.style.height = '0px';
+      box.style.display = 'block';
+    }
+
+    // --- Update selection marquee ---
+    function updateSelectionBox(x, y) {
+      const box = document.getElementById('selection-marquee');
+      if (!box) return;
+
+      const left = Math.min(selStartX, x);
+      const top = Math.min(selStartY, y);
+      const width = Math.abs(selStartX - x);
+      const height = Math.abs(selStartY - y);
+
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+      box.style.width = width + 'px';
+      box.style.height = height + 'px';
+
+      components.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (!el) return;
+        const cLeft = c.x;
+        const cTop = c.y;
+        const cWidth = el.offsetWidth || 100;
+        const cHeight = el.offsetHeight || 60;
+
+        const intersects = !(cLeft + cWidth < left || cLeft > left + width || cTop + cHeight < top || cTop > top + height);
+        if (intersects) {
+          el.classList.add('selected');
+        } else {
+          el.classList.remove('selected');
+        }
+      });
+    }
+
+    function finishSelection() {
+      const box = document.getElementById('selection-marquee');
+      if (box) box.style.display = 'none';
+
+      selectedIds = [];
+      components.forEach(c => {
+        const el = document.getElementById(c.id);
+        if (el && el.classList.contains('selected')) {
+          selectedIds.push(c.id);
+        }
+      });
+
+      if (selectedIds.length === 1) {
+        const model = components.find(c => c.id === selectedIds[0]);
+        if (model) updateProperties(model);
+      } else {
+        updateMultiProperties();
+      }
+      updatePropertiesPanelVisibility();
+    }
+
+    // --- Startup initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+      setupComponentsPanel();
+      setTool('select');
+      setupKeyboardBindings();
+      setupViewportPanning();
+      loadUserCircuit();
+      startSimulationTicks();
+      updatePropertiesPanelVisibility();
+    });
+  </script>
+</body>
+
+</html>

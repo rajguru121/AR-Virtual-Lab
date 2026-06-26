@@ -1,0 +1,322 @@
+{
+  "experiments": [
+    {
+      "id": "and-gate",
+      "title": "AND Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Explore the AND gate – outputs HIGH only when all inputs are HIGH.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 15,
+      "url": "/GATES/AND Gate/index.html",
+      "tags": ["digital", "combinational", "basic"]
+    },
+    {
+      "id": "or-gate",
+      "title": "OR Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Study the OR gate – outputs HIGH when any input is HIGH.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 15,
+      "url": "/GATES/OR Gate/index.html",
+      "tags": ["digital", "combinational", "basic"]
+    },
+    {
+      "id": "not-gate",
+      "title": "NOT Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Understand the NOT gate (inverter) – flips the input signal.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 10,
+      "url": "/GATES/NOT Gate/index.html",
+      "tags": ["digital", "combinational", "basic"]
+    },
+    {
+      "id": "nand-gate",
+      "title": "NAND Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Explore the NAND gate – universal gate that is the inverse of AND.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 15,
+      "url": "/GATES/NAND Gate/index.html",
+      "tags": ["digital", "combinational", "universal"]
+    },
+    {
+      "id": "nor-gate",
+      "title": "NOR Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Study the NOR gate – universal gate that is the inverse of OR.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 15,
+      "url": "/GATES/NOR GATE/index.html",
+      "tags": ["digital", "combinational", "universal"]
+    },
+    {
+      "id": "xor-gate",
+      "title": "XOR Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Explore the XOR gate – outputs HIGH when inputs differ.",
+      "icon": "⚡",
+      "difficulty": "intermediate",
+      "duration_minutes": 15,
+      "url": "/GATES/X-OR Gate/index.html",
+      "tags": ["digital", "combinational", "arithmetic"]
+    },
+    {
+      "id": "xnor-gate",
+      "title": "XNOR Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Study the XNOR gate – outputs HIGH when inputs are the same.",
+      "icon": "⚡",
+      "difficulty": "intermediate",
+      "duration_minutes": 15,
+      "url": "/GATES/XNOR Gate/index.html",
+      "tags": ["digital", "combinational"]
+    },
+    {
+      "id": "buffer-gate",
+      "title": "BUFFER Gate",
+      "type": "gate",
+      "category": "Logic Gates",
+      "description": "Understand the buffer gate – passes input directly to output.",
+      "icon": "⚡",
+      "difficulty": "beginner",
+      "duration_minutes": 10,
+      "url": "/GATES/BUFFER Gate/index.html",
+      "tags": ["digital", "combinational", "basic"]
+    },
+    {
+      "id": "half-adder",
+      "title": "Half Adder",
+      "type": "combinational",
+      "category": "Combinational Circuits",
+      "description": "Build a half adder – adds two single-bit binary numbers.",
+      "icon": "🔧",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/deld-combinational-lab.html",
+      "tags": ["digital", "combinational", "arithmetic"]
+    },
+    {
+      "id": "full-adder",
+      "title": "Full Adder",
+      "type": "combinational",
+      "category": "Combinational Circuits",
+      "description": "Build a full adder – adds three single-bit binary numbers with carry.",
+      "icon": "🔧",
+      "difficulty": "intermediate",
+      "duration_minutes": 25,
+      "url": "/deld-combinational-lab.html",
+      "tags": ["digital", "combinational", "arithmetic"]
+    },
+    {
+      "id": "mux-4to1",
+      "title": "MUX 4:1",
+      "type": "combinational",
+      "category": "Combinational Circuits",
+      "description": "Simulate a 4-to-1 multiplexer – selects one of four inputs.",
+      "icon": "🔧",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/deld-combinational-lab.html",
+      "tags": ["digital", "combinational", "mux"]
+    },
+    {
+      "id": "decoder-2to4",
+      "title": "2:4 Decoder",
+      "type": "combinational",
+      "category": "Combinational Circuits",
+      "description": "Explore a 2-to-4 decoder – activates one of four outputs.",
+      "icon": "🔧",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/deld-combinational-lab.html",
+      "tags": ["digital", "combinational", "decoder"]
+    },
+    {
+      "id": "encoder-4to2",
+      "title": "4:2 Encoder",
+      "type": "combinational",
+      "category": "Combinational Circuits",
+      "description": "Study a 4-to-2 encoder – encodes active input into binary.",
+      "icon": "🔧",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/deld-combinational-lab.html",
+      "tags": ["digital", "combinational", "encoder"]
+    },
+    {
+      "id": "sr-flipflop",
+      "title": "SR Flip-Flop",
+      "type": "sequential",
+      "category": "Sequential Circuits",
+      "description": "Simulate an SR flip-flop – basic memory element with Set/Reset.",
+      "icon": "🔄",
+      "difficulty": "intermediate",
+      "duration_minutes": 25,
+      "url": "/flip flops/SR-FlipFlop/index.html",
+      "tags": ["digital", "sequential", "memory"]
+    },
+    {
+      "id": "jk-flipflop",
+      "title": "JK Flip-Flop",
+      "type": "sequential",
+      "category": "Sequential Circuits",
+      "description": "Explore the JK flip-flop – versatile flip-flop with toggle mode.",
+      "icon": "🔄",
+      "difficulty": "intermediate",
+      "duration_minutes": 25,
+      "url": "/flip flops/JK-FlipFlop-3D/index.html",
+      "tags": ["digital", "sequential", "memory"]
+    },
+    {
+      "id": "d-flipflop",
+      "title": "D Flip-Flop",
+      "type": "sequential",
+      "category": "Sequential Circuits",
+      "description": "Study the D flip-flop – data latch triggered by clock edge.",
+      "icon": "🔄",
+      "difficulty": "intermediate",
+      "duration_minutes": 25,
+      "url": "/flip flops/D-Flipflop/index.html",
+      "tags": ["digital", "sequential", "memory"]
+    },
+    {
+      "id": "t-flipflop",
+      "title": "T Flip-Flop",
+      "type": "sequential",
+      "category": "Sequential Circuits",
+      "description": "Explore the T flip-flop – toggles output on each clock pulse.",
+      "icon": "🔄",
+      "difficulty": "intermediate",
+      "duration_minutes": 25,
+      "url": "/flip flops/T-FlipFlop/index.html",
+      "tags": ["digital", "sequential", "memory"]
+    },
+    {
+      "id": "dda-line",
+      "title": "DDA Line Algorithm",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Visualize the Digital Differential Analyzer line drawing algorithm.",
+      "icon": "📐",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/cg.html",
+      "tags": ["graphics", "line", "algorithm"]
+    },
+    {
+      "id": "bresenham-line",
+      "title": "Bresenham Line Algorithm",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Explore Bresenham's efficient integer-based line drawing.",
+      "icon": "📐",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/cg.html",
+      "tags": ["graphics", "line", "algorithm"]
+    },
+    {
+      "id": "circle-drawing",
+      "title": "Circle Drawing",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Study midpoint circle drawing algorithms.",
+      "icon": "📐",
+      "difficulty": "intermediate",
+      "duration_minutes": 20,
+      "url": "/cg.html",
+      "tags": ["graphics", "circle", "algorithm"]
+    },
+    {
+      "id": "2d-transforms",
+      "title": "2D Transformations",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Apply translation, rotation, and scaling in 2D space.",
+      "icon": "📐",
+      "difficulty": "advanced",
+      "duration_minutes": 30,
+      "url": "/cg.html",
+      "tags": ["graphics", "transform", "2d"]
+    },
+    {
+      "id": "3d-transforms",
+      "title": "3D Transformations",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Explore 3D translation, rotation, scaling, and projection.",
+      "icon": "📐",
+      "difficulty": "advanced",
+      "duration_minutes": 35,
+      "url": "/cg.html",
+      "tags": ["graphics", "transform", "3d"]
+    },
+    {
+      "id": "clipping",
+      "title": "Line Clipping",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Implement Cohen-Sutherland and Liang-Barsky clipping algorithms.",
+      "icon": "📐",
+      "difficulty": "advanced",
+      "duration_minutes": 30,
+      "url": "/cg.html",
+      "tags": ["graphics", "clipping", "algorithm"]
+    },
+    {
+      "id": "bezier-curves",
+      "title": "Bézier Curves",
+      "type": "cg",
+      "category": "Computer Graphics",
+      "description": "Draw and manipulate Bézier curves with control points.",
+      "icon": "📐",
+      "difficulty": "advanced",
+      "duration_minutes": 30,
+      "url": "/cg.html",
+      "tags": ["graphics", "curves", "bezier"]
+    }
+  ],
+  "categories": [
+    {
+      "id": "gate",
+      "name": "Logic Gates",
+      "icon": "⚡",
+      "color": "#00e5ff",
+      "description": "Fundamental digital logic building blocks"
+    },
+    {
+      "id": "combinational",
+      "name": "Combinational Circuits",
+      "icon": "🔧",
+      "color": "#7c3aed",
+      "description": "Circuits whose output depends only on current inputs"
+    },
+    {
+      "id": "sequential",
+      "name": "Sequential Circuits",
+      "icon": "🔄",
+      "color": "#10b981",
+      "description": "Memory elements and state machines"
+    },
+    {
+      "id": "cg",
+      "name": "Computer Graphics",
+      "icon": "📐",
+      "color": "#f59e0b",
+      "description": "Visualization and rendering algorithms"
+    }
+  ]
+}

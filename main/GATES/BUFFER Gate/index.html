@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VirtuLab – BUFFER Gate Simulation: Interactive truth table and visualization">
+    <title>VirtuLab – BUFFER Gate</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0e1a;
+            --surface: #131729;
+            --border: #1e2540;
+            --accent: #7c3aed;
+            --accent-glow: rgba(124, 58, 237, 0.35);
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --on: #10b981;
+            --off: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .header a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+        .header a:hover { text-decoration: underline; }
+        .header h1 { font-size: 1.3rem; font-weight: 600; }
+
+        .main {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1100px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .gate-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            min-width: 320px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .gate-svg-container {
+            width: 280px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gate-svg-container svg { width: 100%; height: 100%; }
+
+        .input-controls {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .toggle-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .toggle-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            border: 2px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-btn.on {
+            background: var(--on);
+            border-color: var(--on);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .toggle-btn.off {
+            background: var(--off);
+            border-color: var(--off);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .output-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .output-value {
+            font-size: 3rem;
+            font-weight: 800;
+            transition: color 0.2s ease;
+        }
+
+        .output-value.high { color: var(--on); text-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+        .output-value.low  { color: var(--off); text-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+
+        .output-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .truth-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            min-width: 280px;
+            flex: 0.7;
+        }
+
+        .truth-panel h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        th {
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr.active-row {
+            background: var(--accent-glow);
+            border-radius: 8px;
+        }
+
+        .info-text {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(124, 58, 237, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        .info-text strong { color: var(--text); }
+
+        @media (max-width: 700px) {
+            .main { flex-direction: column; padding: 1rem; }
+            .gate-panel, .truth-panel { min-width: auto; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="/">← Back to Lab</a>
+    <h1>⚡ BUFFER Gate</h1>
+</div>
+
+<div class="main">
+    <!-- Gate Visualization -->
+    <div class="gate-panel">
+        <div class="gate-svg-container">
+            <svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">
+                <!-- Input wire -->
+                <line x1="20" y1="80" x2="80" y2="80" stroke="#64748b" stroke-width="3"/>
+                <!-- Buffer triangle -->
+                <polygon points="80,40 180,80 80,120" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linejoin="round"/>
+                <!-- Output wire -->
+                <line x1="180" y1="80" x2="260" y2="80" stroke="#64748b" stroke-width="3"/>
+                <!-- Labels -->
+                <text x="10" y="75" fill="#94a3b8" font-size="14" font-weight="600" id="svgA">A: 0</text>
+                <text x="210" y="75" fill="#94a3b8" font-size="14" font-weight="600" id="svgOut">Out: 0</text>
+                <!-- Output dot -->
+                <circle cx="260" cy="80" r="5" id="outputDot" fill="#ef4444"/>
+            </svg>
+        </div>
+
+        <div class="input-controls">
+            <div class="toggle-group">
+                <span class="toggle-label">Input A</span>
+                <button class="toggle-btn off" id="btnA" onclick="toggleInput()">0</button>
+            </div>
+        </div>
+
+        <div class="output-display">
+            <div class="output-value low" id="outputVal">0</div>
+            <div class="output-label">Output</div>
+        </div>
+    </div>
+
+    <!-- Truth Table -->
+    <div class="truth-panel">
+        <h2>Truth Table</h2>
+        <table>
+            <thead>
+                <tr><th>Input A</th><th>Output</th></tr>
+            </thead>
+            <tbody id="truthBody">
+                <tr id="row-0" class="active-row"><td>0</td><td>0</td></tr>
+                <tr id="row-1"><td>1</td><td>1</td></tr>
+            </tbody>
+        </table>
+
+        <div class="info-text">
+            <strong>BUFFER Gate</strong> passes the input directly to the output without
+            any logical change. While it performs no boolean operation, it is essential in
+            digital circuits for <strong>signal amplification</strong>,
+            <strong>impedance matching</strong>, and <strong>delay insertion</strong>.
+            <br><br>
+            <strong>Boolean Expression:</strong> Y = A
+        </div>
+    </div>
+</div>
+
+<script>
+    let inputA = 0;
+
+    function toggleInput() {
+        inputA = inputA ? 0 : 1;
+        update();
+    }
+
+    function update() {
+        const out = inputA; // Buffer: output = input
+
+        const btnA = document.getElementById('btnA');
+        btnA.textContent = inputA;
+        btnA.className = 'toggle-btn ' + (inputA ? 'on' : 'off');
+
+        const outEl = document.getElementById('outputVal');
+        outEl.textContent = out;
+        outEl.className = 'output-value ' + (out ? 'high' : 'low');
+
+        document.getElementById('svgA').textContent = 'A: ' + inputA;
+        document.getElementById('svgOut').textContent = 'Out: ' + out;
+        document.getElementById('outputDot').setAttribute('fill', out ? '#10b981' : '#ef4444');
+
+        document.querySelectorAll('#truthBody tr').forEach(r => r.classList.remove('active-row'));
+        const activeRow = document.getElementById('row-' + inputA);
+        if (activeRow) activeRow.classList.add('active-row');
+    }
+</script>
+
+</body>
+</html>
